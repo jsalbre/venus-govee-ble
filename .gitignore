@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+*.log
+
+# Keep sample data structure but ignore new samples in working directory
+# samples/ directory is committed, but ignore runtime-generated files
+samples/runtime_*.json
+samples/tmp_*.json
+
+# Local configuration overrides (if we add config files later)
+config.local.json
+*.local.json
+
+# Venus OS specific - if copying entire /data directory
+/data/
+
+# Test outputs
+test_output/
+*.test.json

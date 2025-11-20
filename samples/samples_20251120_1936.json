@@ -1,0 +1,384 @@
+{
+  "A4:C1:38:8E:0D:AF": [
+    {
+      "timestamp": "2025-11-20T19:36:59.487336",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -14.8,
+      "humidity": 51.7,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:37:17.765358",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -14.8,
+      "humidity": 51.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:37:23.841344",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -14.8,
+      "humidity": 51.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:37:42.121382",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -72,
+      "temperature_c": -14.8,
+      "humidity": 51.5,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:38:12.552340",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -80,
+      "temperature_c": -14.9,
+      "humidity": 51.3,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:38:36.905349",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -14.9,
+      "humidity": 51.2,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:38:59.242345",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -72,
+      "temperature_c": -14.9,
+      "humidity": 51.1,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:39:54.030411",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -84,
+      "temperature_c": -14.9,
+      "humidity": 50.8,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:40:18.387347",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -72,
+      "temperature_c": -14.9,
+      "humidity": 50.7,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:40:36.666384",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -72,
+      "temperature_c": -14.9,
+      "humidity": 50.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:41:01.024418",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -80,
+      "temperature_c": -14.9,
+      "humidity": 50.5,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:41:07.101355",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -80,
+      "temperature_c": -14.9,
+      "humidity": 50.4,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:41:25.381381",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.0,
+      "humidity": 50.4,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:41:49.733341",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -15.0,
+      "humidity": 50.3,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:42:44.522345",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.1,
+      "humidity": 50.0,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:43:08.881337",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -72,
+      "temperature_c": -15.1,
+      "humidity": 49.9,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:43:27.160351",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -70,
+      "temperature_c": -15.1,
+      "humidity": 49.9,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:43:51.516337",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.2,
+      "humidity": 49.8,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:44:15.874331",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -15.2,
+      "humidity": 49.7,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:44:40.227360",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -15.2,
+      "humidity": 49.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:45:35.012348",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -15.3,
+      "humidity": 49.4,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:45:59.367359",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.4,
+      "humidity": 49.4,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:46:52.136338",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -82,
+      "temperature_c": -15.5,
+      "humidity": 49.2,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:47:10.416348",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -15.5,
+      "humidity": 49.2,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:47:34.771345",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -15.5,
+      "humidity": 49.1,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:47:59.130337",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.6,
+      "humidity": 49.0,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:48:23.484340",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -80,
+      "temperature_c": -15.6,
+      "humidity": 49.0,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:48:29.559346",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -15.7,
+      "humidity": 48.9,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:48:47.839342",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -15.7,
+      "humidity": 48.9,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:48:53.916391",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -76,
+      "temperature_c": -15.7,
+      "humidity": 48.9,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:49:12.195362",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -80,
+      "temperature_c": -15.7,
+      "humidity": 48.8,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:50:00.903360",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -74,
+      "temperature_c": -15.8,
+      "humidity": 48.7,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:50:06.981365",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.8,
+      "humidity": 48.7,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:50:25.260384",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -72,
+      "temperature_c": -15.9,
+      "humidity": 48.7,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:50:49.614414",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -80,
+      "temperature_c": -15.9,
+      "humidity": 48.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:50:59.748336",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -15.9,
+      "humidity": 48.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:51:24.100366",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -16.0,
+      "humidity": 48.6,
+      "battery": 62
+    },
+    {
+      "timestamp": "2025-11-20T19:51:48.458382",
+      "mac": "A4:C1:38:8E:0D:AF",
+      "model": "H5101",
+      "rssi": -78,
+      "temperature_c": -16.0,
+      "humidity": 48.5,
+      "battery": 62
+    }
+  ],
+  "A4:C1:38:B8:DF:A1": [
+    {
+      "timestamp": "2025-11-20T19:40:25.865356",
+      "mac": "A4:C1:38:B8:DF:A1",
+      "model": "H5101",
+      "rssi": -82,
+      "temperature_c": 3.6,
+      "humidity": 39.2,
+      "battery": 74
+    },
+    {
+      "timestamp": "2025-11-20T19:42:41.820442",
+      "mac": "A4:C1:38:B8:DF:A1",
+      "model": "H5101",
+      "rssi": -84,
+      "temperature_c": 3.7,
+      "humidity": 39.7,
+      "battery": 74
+    },
+    {
+      "timestamp": "2025-11-20T19:44:23.293344",
+      "mac": "A4:C1:38:B8:DF:A1",
+      "model": "H5101",
+      "rssi": -82,
+      "temperature_c": 3.8,
+      "humidity": 40.0,
+      "battery": 74
+    },
+    {
+      "timestamp": "2025-11-20T19:51:17.292349",
+      "mac": "A4:C1:38:B8:DF:A1",
+      "model": "H5101",
+      "rssi": -84,
+      "temperature_c": 4.1,
+      "humidity": 41.0,
+      "battery": 73
+    }
+  ]
+}

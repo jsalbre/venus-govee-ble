@@ -95,7 +95,7 @@ class SampleCollector:
         if not result:
             return
         
-        # Add sample with timestamp
+        # Add sample with timestamp and raw data
         sample = {
             'timestamp': adv['timestamp'].isoformat(),
             'mac': mac,
@@ -103,7 +103,10 @@ class SampleCollector:
             'rssi': result.get('rssi'),
             'temperature_c': result.get('temperature_c'),
             'humidity': result.get('humidity'),
-            'battery': result.get('battery')
+            'battery': result.get('battery'),
+            'raw_manufacturer_data': {
+                str(k): v.hex() for k, v in adv.get('manufacturer_data', {}).items()
+            }
         }
         
         self.samples[mac].append(sample)
@@ -296,7 +299,8 @@ def window_samples_by_minute(samples: List[Dict], strategy: str = 'last') -> Dic
                 'temperature_c': mean(temps) if temps else None,
                 'humidity': mean(hums) if hums else None,
                 'battery': int(mean(batts)) if batts else None,
-                'sample_count': len(minute_samples)
+                'sample_count': len(minute_samples),
+                'raw_manufacturer_data': minute_samples[0].get('raw_manufacturer_data', {})
             }
         elif strategy == 'median':
             temps = [s['temperature_c'] for s in minute_samples if s['temperature_c'] is not None]
@@ -310,7 +314,8 @@ def window_samples_by_minute(samples: List[Dict], strategy: str = 'last') -> Dic
                 'temperature_c': median(temps) if temps else None,
                 'humidity': median(hums) if hums else None,
                 'battery': int(median(batts)) if batts else None,
-                'sample_count': len(minute_samples)
+                'sample_count': len(minute_samples),
+                'raw_manufacturer_data': minute_samples[0].get('raw_manufacturer_data', {})
             }
     
     return windowed
@@ -405,7 +410,8 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
                 'hum_app': app_reading['humidity'],
                 'hum_diff': humidity_diff,
                 'hum_ok': humidity_ok,
-                'overall_ok': temp_ok and humidity_ok
+                'overall_ok': temp_ok and humidity_ok,
+                'raw_data': our_reading.get('raw_manufacturer_data', {})
             }
             comparisons.append(comparison)
             
@@ -416,6 +422,11 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
                   f"(diff: {humidity_diff:.2f}%) {'âœ“' if humidity_ok else 'âœ—'}")
             if hasattr(our_reading, '__getitem__') and 'sample_count' in our_reading:
                 print(f"  (Aggregated from {our_reading['sample_count']} samples)")
+            # Show raw data if available
+            if 'raw_manufacturer_data' in our_reading:
+                raw = our_reading['raw_manufacturer_data']
+                if raw:
+                    print(f"  Raw data: {raw}")
             print()
             
             if not (temp_ok and humidity_ok):

@@ -1,6 +1,6 @@
 # Govee BLE Project - Conversation Continuity Document
-**Last Updated:** 2025-11-21  
-**Project Phase:** Phase 1 Complete → Phase 2 Ready to Begin
+**Last Updated:** 2025-11-22 (Phase 2 Implementation Complete)
+**Project Phase:** Phase 2 COMPLETE - Ready for Venus OS Testing
 
 ---
 
@@ -28,7 +28,59 @@ Jeremy is building a Govee BLE bridge for Venus OS (Cerbo GX) to integrate H5101
 
 ---
 
-## Current Status: Phase 1 COMPLETE ✅
+## Current Status: Phase 2 COMPLETE - Ready for Testing (2025-11-22) ✅
+
+### Phase 2 Implementation Complete
+
+✅ **velib_python Dependency:**
+- Successfully cloned from https://github.com/victronenergy/velib_python
+- Location: `/ext/velib_python/`
+- All files available: `vedbus.py`, `ve_utils.py`, supporting modules
+
+✅ **govee_temperature_service.py (v2.0.0):**
+- D-Bus service class for individual sensors
+- Implements `com.victronenergy.temperature` service type
+- All required D-Bus paths implemented
+- Stale detection support
+- Custom name and temperature type configuration
+
+✅ **govee_ble_service.py (v2.0.0):**
+- Main orchestrator daemon
+- btmon reader integration
+- Advertisement routing to services
+- Exponential backoff for restarts (30s → 300s)
+- Log rotation (10MB × 7 files)
+- Graceful shutdown handling
+- Stale sensor monitoring (120s threshold)
+
+✅ **config_manager.py Updates:**
+- Added `restart_min_delay_sec: 30`
+- Added `restart_max_delay_sec: 300`
+- Updated log path to `/data/govee-ble/logs/govee_ble.log`
+- All Phase 2 configuration fields present
+
+✅ **Runit Service Script:**
+- Created at `service/govee-ble/run`
+- Ready for deployment to `/service/govee-ble/`
+
+✅ **Documentation:**
+- `config.example.json` - Example configuration with user's sensors
+- `docs/DEPLOYMENT.md` - Complete deployment guide for Venus OS
+
+### Ready for Phase 2 Testing
+
+**Next Steps:**
+1. Deploy to Venus OS test environment
+2. Test D-Bus service registration
+3. Verify sensors appear in Venus OS GUI
+4. Test stale detection (power off sensor)
+5. Test service restart/recovery
+6. Monitor logs and performance
+7. Address any issues found in testing
+
+---
+
+## Phase 1 Status: COMPLETE ✅
 
 ### Working Components
 
@@ -213,10 +265,11 @@ LE_ADVERTISING_REPORT = re.compile(r'LE Advertising Report')
 - Files packaged for transfer to Venus OS where git works normally
 - Jeremy performs git operations on Venus OS system
 
-**velib_python Dependency:**
-- Successfully retrieved `vedbus.py` content via web_fetch
-- Need to retrieve `ve_utils.py` content
-- Will create files manually in development environment
+**velib_python Dependency (2025-11-22 Update):**
+- ✅ Successfully cloned complete repository via git (on Jeremy's local machine)
+- Location: `ext/velib_python/`
+- All files available: `vedbus.py`, `ve_utils.py`, and supporting modules
+- Note: git works on Jeremy's local machine; previous issues were in Claude-hosted environment
 
 ---
 
@@ -229,12 +282,14 @@ LE_ADVERTISING_REPORT = re.compile(r'LE Advertising Report')
 - ✅ `validate_parsing.py` - Renamed from validate_parsing_v2.py
 - ✅ `debug_btmon.py` - v1.0.0
 
-**Phase 2 Files (Pending):**
-- ⏳ `ext/velib_python/vedbus.py` - Retrieved, needs creation
-- ⏳ `ext/velib_python/ve_utils.py` - Needs retrieval
-- ⏳ `govee_temperature_service.py` - Not started
-- ⏳ `govee_ble_service.py` - Not started
-- ⏳ `/service/govee-ble/run` - Not started
+**Phase 2 Files (Complete 2025-11-22):**
+- ✅ `ext/velib_python/` - Complete repository cloned
+- ✅ `src/govee_temperature_service.py` - v2.0.0 (D-Bus service per sensor)
+- ✅ `src/govee_ble_service.py` - v2.0.0 (Main orchestrator daemon)
+- ✅ `src/config_manager.py` - Updated with Phase 2 fields
+- ✅ `service/govee-ble/run` - Runit service script
+- ✅ `config.example.json` - Example configuration
+- ✅ `docs/DEPLOYMENT.md` - Deployment guide
 
 **Cleanup Pending (Next Push):**
 - Rename `validate_parsing_v2.py` → `validate_parsing.py`
@@ -371,20 +426,31 @@ tail -f /data/govee-ble/logs/govee_ble.log
 
 ---
 
-## Next Immediate Actions
+## Phase 2 Implementation Summary (2025-11-22)
 
-1. **Retrieve ve_utils.py** content via web_fetch
-2. **Create velib_python files** in development environment
-3. **Implement govee_temperature_service.py** - D-Bus service per sensor
-4. **Implement govee_ble_service.py** - Main orchestrator
-5. **Update config_manager.py** - Add temperature_type and stale_threshold_sec
-6. **Create runit service script**
-7. **Test locally** in Claude environment (limited testing without actual D-Bus)
-8. **Package for Venus OS deployment**
-9. **Update all documentation** throughout process
+### Completed Tasks
+1. ✅ Cloned velib_python dependency
+2. ✅ Implemented govee_temperature_service.py (v2.0.0)
+3. ✅ Implemented govee_ble_service.py (v2.0.0)
+4. ✅ Updated config_manager.py with Phase 2 fields
+5. ✅ Created runit service script
+6. ✅ Created example configuration
+7. ✅ Created deployment guide
+8. ✅ Updated all documentation
+
+### Next Immediate Actions - Testing Phase
+
+1. **Deploy to Venus OS** - Transfer files and test manually
+2. **Verify D-Bus registration** - Check services appear on D-Bus
+3. **Test in Venus OS GUI** - Verify sensors show in temperature list
+4. **Stale detection test** - Power off sensor, verify disconnect after 120s
+5. **Recovery test** - Kill service, verify runit restarts it
+6. **Log monitoring** - Verify rotation and no errors
+7. **Performance check** - Monitor CPU/memory usage
+8. **Bug fixes** - Address any issues found during testing
 
 ---
 
-**Status:** Phase 1 Complete, Phase 2 Ready to Begin  
-**Priority:** MEDIUM - Core functionality working, D-Bus integration enhances value  
-**Blocker:** None - All dependencies identified and retrievable
+**Status:** Phase 2 IMPLEMENTATION COMPLETE - Ready for Testing (2025-11-22)
+**Priority:** HIGH - All code complete, needs Venus OS testing
+**Blocker:** None - Ready for deployment and testing on actual Venus OS device

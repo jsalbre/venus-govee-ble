@@ -31,9 +31,11 @@ class ConfigManager:
         "device_instances": {},
         "ble_interface": "hci0",
         "log_level": "INFO",
-        "log_path": "/data/govee-ble/govee.log",
+        "log_path": "/data/govee-ble/logs/govee_ble.log",
         "update_interval_sec": 1,
         "stale_threshold_sec": 120,
+        "restart_min_delay_sec": 30,
+        "restart_max_delay_sec": 300,
         "battery": {
             "low_alarm_threshold_pct": 15.0
         },

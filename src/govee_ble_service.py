@@ -192,12 +192,18 @@ class GoveeBLEService:
         # Calculate device instance
         device_instance = self._calculate_device_instance(mac_address)
 
-        # Create the service
+        # Create a private D-Bus connection for this service
+        # Using private=True creates a separate connection instead of the shared singleton
+        import dbus
+        dbusconn = dbus.SystemBus(private=True)
+
+        # Create the service with its own D-Bus connection
         service = GoveeTemperatureService(
             mac_address=mac_address,
             device_name=device_name,
             device_instance=device_instance,
-            temperature_type=temp_type
+            temperature_type=temp_type,
+            dbusconn=dbusconn
         )
 
         _LOGGER.info(

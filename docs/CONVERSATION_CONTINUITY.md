@@ -1,6 +1,6 @@
 # Govee BLE Project - Conversation Continuity Document
-**Last Updated:** 2025-11-22 (Phase 2 Implementation Complete)
-**Project Phase:** Phase 2 COMPLETE - Ready for Venus OS Testing
+**Last Updated:** 2025-11-23 (Phase 2 Bug Fixes - Testing in Progress)
+**Project Phase:** Phase 2 TESTING - Bug Fixes Applied
 
 ---
 
@@ -28,7 +28,35 @@ Jeremy is building a Govee BLE bridge for Venus OS (Cerbo GX) to integrate H5101
 
 ---
 
-## Current Status: Phase 2 COMPLETE - Ready for Testing (2025-11-22) ✅
+## Current Status: Phase 2 TESTING - Bug Fixes Applied (2025-11-23) ⏳
+
+### Phase 2 Bugs Found and Fixed During Testing
+
+**Bug #1: Import Path Error** (Fixed in commit `ac6bc96`)
+- **Error:** `ModuleNotFoundError: No module named 'vedbus'`
+- **Cause:** Import path `'../ext/velib_python'` was incorrect when scripts run from `/data/govee-ble/`
+- **Fix:** Changed to `'ext/velib_python'` in both service files
+- **Files:** `govee_temperature_service.py:14`, `govee_ble_service.py:23`
+
+**Bug #2: D-Bus Path Conflict** (Fixed in commit `7543729`)
+- **Error:** `KeyError: "Can't register the object-path handler for '/': there is already a handler"`
+- **Cause:** `dbus.SystemBus()` returns singleton connection; both sensors tried to register root path on same connection
+- **Fix:** Create private D-Bus connections using `dbus.SystemBus(private=True)` for each sensor
+- **File:** `govee_ble_service.py:198`
+
+**Bug #3: Temperature Type Values** (Fixed in commit `6081080`)
+- **Issue:** Temperature type enum values were incorrect
+- **Correct Values:** 0=battery, 1=fridge, 2=generic, 3=room, 4=outdoor, 5=waterheater, 6=freezer
+- **Fix:** Made TemperatureType and CustomName writable, updated config (Freezer=6, Fridge=1)
+- **Files:** `govee_temperature_service.py:100-102`, `config.example.json`
+
+**Bug #4: Advertisement Key Mismatch** (Fixed in commit `b586b38`) 🔴 **CRITICAL**
+- **Symptom:** Services registered on D-Bus but no sensor data appeared; Govee MACs never showed in logs
+- **Root Cause:** `_handle_advertisement()` looked for key `'address'` but `AdvertisementAssembler` returns `'mac'`
+- **Result:** All advertisements were silently filtered out even when properly assembled
+- **Fix:** Changed `adv_data.get('address', '')` → `adv_data.get('mac', '')`
+- **File:** `govee_ble_service.py:242`
+- **Impact:** This was preventing ALL sensor data from reaching D-Bus services
 
 ### Phase 2 Implementation Complete
 
@@ -440,17 +468,29 @@ tail -f /data/govee-ble/logs/govee_ble.log
 
 ### Next Immediate Actions - Testing Phase
 
-1. **Deploy to Venus OS** - Transfer files and test manually
-2. **Verify D-Bus registration** - Check services appear on D-Bus
-3. **Test in Venus OS GUI** - Verify sensors show in temperature list
-4. **Stale detection test** - Power off sensor, verify disconnect after 120s
-5. **Recovery test** - Kill service, verify runit restarts it
-6. **Log monitoring** - Verify rotation and no errors
-7. **Performance check** - Monitor CPU/memory usage
-8. **Bug fixes** - Address any issues found during testing
+**Deployment Instructions:**
+```bash
+# Quick fix (just update fixed file):
+scp src/govee_ble_service.py root@venus.local:/data/govee-ble/
+
+# OR full clean deployment:
+scp ~/govee-ble-deploy.tar.gz root@venus.local:/tmp/
+ssh root@venus.local "rm -rf /data/govee-ble /service/govee-ble && cd / && tar xzf /tmp/govee-ble-deploy.tar.gz"
+```
+
+**Testing Checklist:**
+1. ⏳ **Deploy bug fixes** - Transfer updated govee_ble_service.py to Venus OS
+2. ⏳ **Verify advertisements received** - Check logs for Govee MACs appearing
+3. ⏳ **Verify D-Bus updates** - Check temperature/humidity values updating
+4. ⏳ **Test in Venus OS GUI** - Verify sensors show in temperature list with correct data
+5. ⏳ **Stale detection test** - Power off sensor, verify disconnect after 120s
+6. ⏳ **Recovery test** - Kill service, verify runit restarts it
+7. ⏳ **Log monitoring** - Verify rotation and no errors
+8. ⏳ **Performance check** - Monitor CPU/memory usage over 24 hours
 
 ---
 
-**Status:** Phase 2 IMPLEMENTATION COMPLETE - Ready for Testing (2025-11-22)
-**Priority:** HIGH - All code complete, needs Venus OS testing
-**Blocker:** None - Ready for deployment and testing on actual Venus OS device
+**Status:** Phase 2 TESTING - Bug Fixes Applied (2025-11-23)
+**Priority:** HIGH - Critical bug fixed (advertisement key mismatch), ready for retest
+**Blocker:** None - All known bugs fixed, ready for Venus OS testing
+**Files Ready:** Updated tarball at `~/govee-ble-deploy.tar.gz` (455K)

@@ -239,7 +239,7 @@ class GoveeBLEService:
         Args:
             adv_data: Advertisement data from AdvertisementAssembler
         """
-        mac = adv_data.get('address', '').upper()
+        mac = adv_data.get('mac', '').upper()
 
         # Check if this sensor is allowlisted
         if mac not in self.services:

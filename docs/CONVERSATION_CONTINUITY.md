@@ -58,6 +58,14 @@ Jeremy is building a Govee BLE bridge for Venus OS (Cerbo GX) to integrate H5101
 - **File:** `govee_ble_service.py:242`
 - **Impact:** This was preventing ALL sensor data from reaching D-Bus services
 
+**Bug #5: Performance - Processing All BLE Devices** (Fixed in commit `9d8b237`) 🔴 **CRITICAL**
+- **Symptom:** System falling ~2 minutes behind; taking ~3 seconds to process each advertisement
+- **Root Cause:** `AdvertisementAssembler` parsed complete advertisement data for EVERY BLE device in range (100+ devices)
+- **Analysis:** Only 2 Govee sensors needed, but assembler processed Name, RSSI, Company, Data for all devices before filtering
+- **Fix:** Added early MAC filtering - discard non-allowlisted events immediately after parsing MAC address
+- **Files:** `btmon_reader.py:99-111,220-223`, `govee_ble_service.py:293-300`
+- **Impact:** Reduces processing from ~3 sec/device to instant filtering; enables real-time sensor updates
+
 ### Phase 2 Implementation Complete
 
 ✅ **velib_python Dependency:**

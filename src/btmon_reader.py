@@ -208,6 +208,7 @@ class AdvertisementAssembler:
         match = self.LE_ADDRESS_PATTERN.search(line)
         if match:
             self.current_event['mac'] = match.group(1).upper()
+            _LOGGER.debug(f"Parsed MAC: {self.current_event['mac']}")
             return None
         
         # Parse RSSI
@@ -244,20 +245,23 @@ class AdvertisementAssembler:
     def _finalize_event(self) -> Optional[Dict]:
         """
         Finalize current event and return if valid.
-        
+
         Returns:
             Event dict if MAC is present, else None
         """
         if not self.current_event:
+            _LOGGER.debug("_finalize_event: No current event")
             return None
-        
+
         event = self.current_event
         self.current_event = None
-        
+
         # Must have at least a MAC address
         if not event['mac']:
+            _LOGGER.debug(f"_finalize_event: No MAC address in event: {event}")
             return None
-        
+
+        _LOGGER.debug(f"_finalize_event: Returning event for MAC {event['mac']}")
         return event
 
 

@@ -248,7 +248,7 @@ class GoveeBLEService:
         # Parse the advertisement
         try:
             parsed = parse_advertisement(
-                mac=adv_data['mac'],
+                mac=adv_data.get('mac', mac),  # Use already-validated mac from line 242
                 name=adv_data.get('name'),
                 rssi=adv_data.get('rssi'),
                 manufacturer_data=adv_data.get('manufacturer_data', {})
@@ -259,7 +259,7 @@ class GoveeBLEService:
             # Update the D-Bus service
             service = self.services[mac]
             service.update(
-                temperature=parsed['temperature'],
+                temperature=parsed['temperature_c'],
                 humidity=parsed['humidity'],
                 battery=parsed['battery'],
                 rssi=adv_data.get('rssi', 0)

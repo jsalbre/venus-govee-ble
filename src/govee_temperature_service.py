@@ -112,16 +112,16 @@ class GoveeTemperatureService:
         Update sensor readings.
 
         Args:
-            temperature: Temperature in Celsius
-            humidity: Relative humidity in percent
-            battery: Battery level (0-100)
+            temperature: Temperature in Celsius (or None if invalid)
+            humidity: Relative humidity in percent (or None if invalid)
+            battery: Battery level (0-100, or None if invalid)
             rssi: Signal strength in dBm
         """
         now = time.time()
 
-        # Update all sensor values
-        self._dbusservice['/Temperature'] = round(temperature, 2)
-        self._dbusservice['/Humidity'] = round(humidity, 2)
+        # Update all sensor values (D-Bus accepts None for invalid/unavailable values)
+        self._dbusservice['/Temperature'] = round(temperature, 2) if temperature is not None else None
+        self._dbusservice['/Humidity'] = round(humidity, 2) if humidity is not None else None
         self._dbusservice['/Battery'] = battery
         self._dbusservice['/RSSI'] = rssi
         self._dbusservice['/Mgmt/LastUpdate'] = int(now)
@@ -134,9 +134,13 @@ class GoveeTemperatureService:
 
         self.last_update_time = now
 
+        # Safe logging with None handling
+        temp_str = f"{temperature:.2f}°C" if temperature is not None else "N/A"
+        hum_str = f"{humidity:.2f}%" if humidity is not None else "N/A"
+        batt_str = f"{battery}%" if battery is not None else "N/A"
         _LOGGER.debug(
-            f"{self.service_name}: Updated - Temp={temperature:.2f}°C, "
-            f"Humidity={humidity:.2f}%, Battery={battery}%, RSSI={rssi}dBm"
+            f"{self.service_name}: Updated - Temp={temp_str}, "
+            f"Humidity={hum_str}, Battery={batt_str}, RSSI={rssi}dBm"
         )
 
     def mark_disconnected(self):

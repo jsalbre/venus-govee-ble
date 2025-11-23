@@ -20,7 +20,7 @@ from typing import Dict, Optional
 from logging.handlers import RotatingFileHandler
 
 # Add velib_python to path
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '../ext/velib_python'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'ext/velib_python'))
 
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib

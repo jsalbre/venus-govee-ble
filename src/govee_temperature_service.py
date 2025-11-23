@@ -97,9 +97,9 @@ class GoveeTemperatureService:
         self._dbusservice.add_path('/Temperature', value=None, description='Temperature in Celsius')
         self._dbusservice.add_path('/Humidity', value=None, description='Relative humidity in percent')
         self._dbusservice.add_path('/Status', value=self.STATUS_OK, description='Status: 0=Ok, 1=Disconnected')
-        self._dbusservice.add_path('/TemperatureType', value=self.temperature_type,
-                                   description='0=battery, 1=fridge, 2=generic')
-        self._dbusservice.add_path('/CustomName', value=self.device_name, description='Custom name')
+        self._dbusservice.add_path('/TemperatureType', value=self.temperature_type, writeable=True,
+                                   description='0=battery, 1=fridge, 2=generic, 3=room, 4=outdoor, 5=waterheater, 6=freezer')
+        self._dbusservice.add_path('/CustomName', value=self.device_name, writeable=True, description='Custom name')
 
         # Additional info paths
         self._dbusservice.add_path('/Battery', value=None, description='Battery level percentage')

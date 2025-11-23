@@ -8,7 +8,7 @@
     "A4:C1:38:B8:DF:A1": "Fridge"
   },
   "temperature_type": {
-    "A4:C1:38:8E:0D:AF": 1,
+    "A4:C1:38:8E:0D:AF": 6,
     "A4:C1:38:B8:DF:A1": 1
   },
   "device_instances": {},

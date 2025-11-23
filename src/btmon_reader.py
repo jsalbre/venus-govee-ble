@@ -96,12 +96,19 @@ class AdvertisementAssembler:
     COMPANY_PATTERN = re.compile(r'Company: .+ \((\d+)\)')
     DATA_PATTERN = re.compile(r'^\s+Data: ([0-9a-f]+)\s*$')
     
-    def __init__(self):
-        """Initialize assembler with date tracking for timestamp parsing."""
+    def __init__(self, allowlist=None):
+        """
+        Initialize assembler with date tracking for timestamp parsing.
+
+        Args:
+            allowlist: Optional set of MAC addresses to filter for (uppercase).
+                      If provided, only advertisements from these MACs will be returned.
+        """
         self.current_date = datetime.date.today()
         self.last_time = None
         self.current_event = None
         self.current_company_id = None
+        self.allowlist = set(mac.upper() for mac in allowlist) if allowlist else None
     
     def parse_timestamp(self, date_str: Optional[str], time_str: str) -> datetime.datetime:
         """
@@ -208,6 +215,13 @@ class AdvertisementAssembler:
         match = self.LE_ADDRESS_PATTERN.search(line)
         if match:
             self.current_event['mac'] = match.group(1).upper()
+
+            # Early filtering: if allowlist is set and MAC not in it, discard this event
+            if self.allowlist and self.current_event['mac'] not in self.allowlist:
+                _LOGGER.debug(f"Filtered out non-allowlisted MAC: {self.current_event['mac']}")
+                self.current_event = None
+                return None
+
             _LOGGER.debug(f"Parsed MAC: {self.current_event['mac']}")
             return None
         

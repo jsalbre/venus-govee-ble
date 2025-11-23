@@ -247,7 +247,12 @@ class GoveeBLEService:
 
         # Parse the advertisement
         try:
-            parsed = parse_advertisement(adv_data)
+            parsed = parse_advertisement(
+                mac=adv_data['mac'],
+                name=adv_data.get('name'),
+                rssi=adv_data.get('rssi'),
+                manufacturer_data=adv_data.get('manufacturer_data', {})
+            )
             if not parsed:
                 return
 

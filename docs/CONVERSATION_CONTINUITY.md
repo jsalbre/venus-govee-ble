@@ -58,13 +58,18 @@ Jeremy is building a Govee BLE bridge for Venus OS (Cerbo GX) to integrate H5101
 - **File:** `govee_ble_service.py:242`
 - **Impact:** This was preventing ALL sensor data from reaching D-Bus services
 
-**Bug #5: Performance - Processing All BLE Devices** (Fixed in commit `9d8b237`) 🔴 **CRITICAL**
+**Bug #5: Performance - Processing All BLE Devices** (Fixed in commits `9d8b237`, `aa497dd`) 🔴 **CRITICAL**
 - **Symptom:** System falling ~2 minutes behind; taking ~3 seconds to process each advertisement
-- **Root Cause:** `AdvertisementAssembler` parsed complete advertisement data for EVERY BLE device in range (100+ devices)
-- **Analysis:** Only 2 Govee sensors needed, but assembler processed Name, RSSI, Company, Data for all devices before filtering
-- **Fix:** Added early MAC filtering - discard non-allowlisted events immediately after parsing MAC address
-- **Files:** `btmon_reader.py:99-111,220-223`, `govee_ble_service.py:293-300`
-- **Impact:** Reduces processing from ~3 sec/device to instant filtering; enables real-time sensor updates
+- **Root Causes:**
+  1. Parsed complete advertisement data for ALL 100+ BLE devices in range
+  2. Debug logging spam - hundreds of log writes per second
+  3. Read only 1 line per 100ms callback - backlog buildup
+- **Triple Fix:**
+  1. **Govee OUI Filter (A4:C1:38):** Two-stage filtering - check Govee OUI prefix first, then allowlist. Silently discard 99% of devices before parsing details
+  2. **Remove Debug Spam:** Eliminated "Started event" and "Filtered MAC" logs for non-Govee devices. Only log accepted Govee sensors
+  3. **Multi-line Reading:** Read up to 100 lines per callback instead of 1. Clears backlog quickly
+- **Files:** `btmon_reader.py:99-111,220-234,283`, `govee_ble_service.py:293-300,313-337`
+- **Impact:** Near real-time processing with no backlog; minimal CPU and I/O overhead
 
 ### Phase 2 Implementation Complete
 

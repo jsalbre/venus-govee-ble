@@ -176,7 +176,6 @@ class AdvertisementAssembler:
                 'manufacturer_data': {}
             }
             self.current_company_id = None
-            _LOGGER.debug(f"Started new MGMT event at {timestamp}")
             return result
         
         # Check for new HCI Event (format 2)
@@ -198,7 +197,6 @@ class AdvertisementAssembler:
                 'is_hci_format': True
             }
             self.current_company_id = None
-            _LOGGER.debug(f"Started new HCI event at {timestamp}")
             return result
         
         # Check for LE Advertising Report (confirms HCI format)
@@ -214,15 +212,23 @@ class AdvertisementAssembler:
         # Parse Address (both formats use "Address:" but HCI might not have "LE" prefix)
         match = self.LE_ADDRESS_PATTERN.search(line)
         if match:
-            self.current_event['mac'] = match.group(1).upper()
+            mac = match.group(1).upper()
 
-            # Early filtering: if allowlist is set and MAC not in it, discard this event
-            if self.allowlist and self.current_event['mac'] not in self.allowlist:
-                _LOGGER.debug(f"Filtered out non-allowlisted MAC: {self.current_event['mac']}")
+            # Stage 1: Govee OUI filter (A4:C1:38) - discard non-Govee devices silently
+            if not mac.startswith('A4:C1:38'):
                 self.current_event = None
                 return None
 
-            _LOGGER.debug(f"Parsed MAC: {self.current_event['mac']}")
+            # Stage 2: Allowlist filter (only for Govee devices)
+            self.current_event['mac'] = mac
+            if self.allowlist and mac not in self.allowlist:
+                # Govee device but not in our allowlist - log at debug level
+                _LOGGER.debug(f"Govee device not in allowlist: {mac}")
+                self.current_event = None
+                return None
+
+            # Accepted Govee device - log at debug level
+            _LOGGER.debug(f"Processing Govee device: {mac}")
             return None
         
         # Parse RSSI
@@ -264,7 +270,6 @@ class AdvertisementAssembler:
             Event dict if MAC is present, else None
         """
         if not self.current_event:
-            _LOGGER.debug("_finalize_event: No current event")
             return None
 
         event = self.current_event
@@ -272,10 +277,10 @@ class AdvertisementAssembler:
 
         # Must have at least a MAC address
         if not event['mac']:
-            _LOGGER.debug(f"_finalize_event: No MAC address in event: {event}")
             return None
 
-        _LOGGER.debug(f"_finalize_event: Returning event for MAC {event['mac']}")
+        # Only Govee devices in allowlist reach this point
+        _LOGGER.debug(f"Finalized advertisement from {event['mac']}")
         return event
 
 

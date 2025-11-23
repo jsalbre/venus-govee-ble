@@ -310,21 +310,29 @@ class GoveeBLEService:
                 self.mainloop.quit()
                 return False
 
-            # Read line from btmon (non-blocking via timeout)
-            line = self.btmon_process.stdout.readline()
-            if not line:
-                return True
+            # Read multiple lines per callback to clear backlog (up to 100 lines)
+            lines_processed = 0
+            max_lines_per_call = 100
 
-            # Reset watchdog
-            self.watchdog.reset()
+            for _ in range(max_lines_per_call):
+                line = self.btmon_process.stdout.readline()
+                if not line:
+                    # EOF - btmon died
+                    break
 
-            # Feed line to assembler
-            adv = self.assembler.process_line(line.rstrip())
-            if adv:
-                self._handle_advertisement(adv)
+                lines_processed += 1
 
-            # Check watchdog
-            self.watchdog.check()
+                # Reset watchdog
+                self.watchdog.reset()
+
+                # Feed line to assembler
+                adv = self.assembler.process_line(line.rstrip())
+                if adv:
+                    self._handle_advertisement(adv)
+
+            # Check watchdog periodically (not every line)
+            if lines_processed > 0:
+                self.watchdog.check()
 
             return True  # Continue reading
 

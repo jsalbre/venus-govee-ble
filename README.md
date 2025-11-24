@@ -51,30 +51,57 @@ Based on validation against Govee mobile app:
 
 ## Quick Start
 
-### 1. Download Release
+### 1. Download and Transfer
 
-Download the latest `govee-ble-deploy.tar.gz` from the [Releases](../../releases) page.
-
-### 2. Install on Venus OS
+Download `govee-ble-deploy.tar.gz` from [Releases](../../releases) and transfer to Venus OS:
 
 ```bash
-# Transfer to Venus OS
 scp govee-ble-deploy.tar.gz root@venus.local:/tmp/
+```
 
+### 2. Run Installation Script
+
+```bash
 # SSH to Venus OS
 ssh root@venus.local
 
-# Extract and install
+# Extract and run installer
 cd /tmp
 tar xzf govee-ble-deploy.tar.gz
 cd govee-ble-deploy
-cat INSTALL.txt
-# Follow the instructions in INSTALL.txt
+./install.sh
 ```
 
-### 3. Configure Sensors
+The installer automatically:
+- Deploys files to proper locations
+- Creates default configuration
+- Sets up the runit service
+- Prompts to start the service
 
-Edit `/data/govee-ble/config.json`:
+### 3. Find Your Sensors
+
+**Important:** Govee H510x sensors do NOT display MAC addresses on the device or in the Govee app.
+
+Use the discovery tool:
+
+```bash
+/data/govee-ble/find-sensors.sh
+```
+
+This scans for 30 seconds and displays:
+- MAC addresses (needed for config)
+- Device names
+- Example configuration JSON
+
+### 4. Configure
+
+Add discovered MAC addresses to config:
+
+```bash
+vi /data/govee-ble/config.json
+```
+
+Example (from find-sensors.sh output):
 
 ```json
 {
@@ -93,21 +120,22 @@ Edit `/data/govee-ble/config.json`:
 }
 ```
 
-**Temperature Types:**
-- `0` = Battery sensor
-- `1` = Fridge
-- `2` = Generic (default)
-- `3` = Room
-- `4` = Outdoor
-- `5` = Water heater
-- `6` = Freezer
+**Temperature Types:** 0=Battery, 1=Fridge, 2=Generic, 3=Room, 4=Outdoor, 5=Water heater, 6=Freezer
 
-### 4. Verify in Venus OS
+### 5. Start and Verify
 
-1. Open **Remote Console** or local display
-2. Navigate to **Settings → Temperature sensors**
-3. Your sensors should appear with custom names
-4. Check **Device list** for live readings
+```bash
+# Start service (if not already running)
+svc -u /service/govee-ble
+
+# Check logs
+tail -f /data/govee-ble/logs/govee_ble.log
+```
+
+Verify in Venus OS GUI:
+- **Settings → Temperature sensors** - Sensors appear here
+- **Device list** - Shows live readings
+- **VRM Portal** - Historical data (after 15 minutes)
 
 ## Documentation
 

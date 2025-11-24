@@ -175,14 +175,9 @@ class GoveeBLEService:
             new_name: New custom name
         """
         try:
-            # Update in-memory config
-            if 'names' not in self.config:
-                self.config['names'] = {}
-            self.config['names'][mac_address] = new_name
-
-            # Write to file
-            self.config_manager.write(self.config)
-            _LOGGER.info(f"Saved CustomName for {mac_address}: '{new_name}'")
+            self.config_manager.update_custom_name(mac_address, new_name)
+            # Reload config to stay in sync
+            self.config = self.config_manager.read()
         except Exception as e:
             _LOGGER.error(f"Failed to save CustomName for {mac_address}: {e}", exc_info=True)
 
@@ -195,14 +190,9 @@ class GoveeBLEService:
             new_type: New temperature type
         """
         try:
-            # Update in-memory config
-            if 'temperature_type' not in self.config:
-                self.config['temperature_type'] = {}
-            self.config['temperature_type'][mac_address] = new_type
-
-            # Write to file
-            self.config_manager.write(self.config)
-            _LOGGER.info(f"Saved TemperatureType for {mac_address}: {new_type}")
+            self.config_manager.update_temperature_type(mac_address, new_type)
+            # Reload config to stay in sync
+            self.config = self.config_manager.read()
         except Exception as e:
             _LOGGER.error(f"Failed to save TemperatureType for {mac_address}: {e}", exc_info=True)
 

@@ -212,25 +212,45 @@ class ConfigManager:
             
             self._atomic_write(config)
     
+    def update_custom_name(self, mac: str, name: str):
+        """
+        Set custom name for a device.
+
+        Args:
+            mac: MAC address
+            name: Custom name string
+        """
+        mac = mac.upper()
+
+        with self._lock():
+            config = self._read_unlocked()
+            if 'names' not in config:
+                config['names'] = {}
+            config['names'][mac] = name
+            _LOGGER.info(f"Set custom name for {mac}: '{name}'")
+            self._atomic_write(config)
+
     def update_temperature_type(self, mac: str, temp_type: int):
         """
         Set temperature type override for a device.
-        
+
         Args:
             mac: MAC address
             temp_type: Temperature type (0-6)
         """
         mac = mac.upper()
-        
+
         if not 0 <= temp_type <= 6:
             raise ValueError(f"Invalid temperature type: {temp_type} (must be 0-6)")
-        
+
         with self._lock():
             config = self._read_unlocked()
+            if 'temperature_type' not in config:
+                config['temperature_type'] = {}
             config['temperature_type'][mac] = temp_type
             _LOGGER.info(f"Set temperature type for {mac}: {temp_type}")
             self._atomic_write(config)
-    
+
     def update_parser_version(self, version: str):
         """
         Update parser version in config.

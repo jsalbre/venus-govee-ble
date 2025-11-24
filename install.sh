@@ -100,17 +100,48 @@ if [ -f "$SCRIPT_DIR"/data/govee-ble/find-sensors.sh ]; then
     echo_success "Helper scripts installed"
 fi
 
-# Step 6: Install service
+# Step 6: Install service (Venus OS style - persist across reboots)
 echo_info "Installing runit service..."
+
+# Stop existing service if running
 if [ -d /service/govee-ble ]; then
-    echo_warning "Service already exists, stopping..."
+    echo_info "Stopping existing service..."
     svc -d /service/govee-ble 2>/dev/null || true
     sleep 2
 fi
 
-cp -rf "$SCRIPT_DIR"/service/govee-ble /service/
-chmod +x /service/govee-ble/run
-echo_success "Service installed"
+# Copy service files to /data (persists across reboots)
+echo_info "Installing service files to /data/govee-ble/service..."
+mkdir -p /data/govee-ble/service
+cp -rf "$SCRIPT_DIR"/service/govee-ble/* /data/govee-ble/service/
+chmod +x /data/govee-ble/service/run
+
+# Create symlink in /service
+echo_info "Creating service symlink..."
+rm -rf /service/govee-ble 2>/dev/null || true
+ln -sf /data/govee-ble/service /service/govee-ble
+
+# Add to rc.local to recreate symlink on boot
+if [ -f /data/rc.local ]; then
+    if ! grep -q '/service/govee-ble' /data/rc.local; then
+        echo_info "Adding service to rc.local for boot persistence..."
+        echo "" >> /data/rc.local
+        echo "# Govee BLE Service" >> /data/rc.local
+        echo "ln -sf /data/govee-ble/service /service/govee-ble" >> /data/rc.local
+    else
+        echo_info "Service already in rc.local"
+    fi
+else
+    echo_warning "rc.local not found, creating it..."
+    cat > /data/rc.local << 'RCEOF'
+#!/bin/bash
+# Govee BLE Service
+ln -sf /data/govee-ble/service /service/govee-ble
+RCEOF
+    chmod +x /data/rc.local
+fi
+
+echo_success "Service installed and configured for boot persistence"
 
 # Step 7: Check configuration
 echo

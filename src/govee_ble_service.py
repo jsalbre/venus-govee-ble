@@ -153,17 +153,17 @@ class GoveeBLEService:
         """
         Calculate consistent device instance from MAC address.
 
-        Uses last 4 bytes of MAC modulo 100.
+        Uses last 4 bytes of MAC modulo 100, offset by 400.
 
         Args:
             mac_address: MAC address (e.g., "A4:C1:38:8E:0D:AF")
 
         Returns:
-            Device instance (0-99)
+            Device instance (400-499)
         """
-        # Get last 4 hex chars, convert to int, mod 100
+        # Get last 4 hex chars, convert to int, mod 100, offset by 400
         mac_hex = mac_address.replace(':', '')[-4:]
-        instance = int(mac_hex, 16) % 100
+        instance = 400 + (int(mac_hex, 16) % 100)
         return instance
 
     def _save_custom_name(self, mac_address: str, new_name: str):

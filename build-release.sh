@@ -48,6 +48,13 @@ echo "Copying service files..."
 cp -r service/govee-ble "$BUILD_DIR/service/"
 chmod +x "$BUILD_DIR/service/govee-ble/run"
 
+# Copy helper scripts
+echo "Copying helper scripts..."
+cp install.sh "$BUILD_DIR/"
+cp find-sensors.sh "$BUILD_DIR/data/govee-ble/"
+chmod +x "$BUILD_DIR/install.sh"
+chmod +x "$BUILD_DIR/data/govee-ble/find-sensors.sh"
+
 # Copy example config as default config
 echo "Copying configuration template..."
 cp config.example.json "$BUILD_DIR/data/govee-ble/config.json"
@@ -60,21 +67,8 @@ Govee BLE Venus OS Bridge - Installation Instructions
 Version: 1.0.0
 =========================================================
 
-OVERVIEW
---------
-This package integrates Govee H5101/H5102/H5104 Bluetooth temperature/
-humidity sensors with Victron Venus OS. Sensors appear natively in the
-Venus OS GUI as standard temperature sensors.
-
-PREREQUISITES
--------------
-- Victron Venus OS device (Cerbo GX, Venus GX, etc.)
-- Root SSH access enabled
-- Govee H5101/H5102/H5104 sensors
-- Bluetooth adapter (built-in or USB)
-
-INSTALLATION STEPS
-------------------
+QUICK START
+-----------
 
 1. Transfer this tarball to your Venus OS device:
 
@@ -84,143 +78,139 @@ INSTALLATION STEPS
 
    ssh root@venus.local
 
-3. Extract to system directories:
+3. Extract the tarball:
 
-   cd /
-   tar xzf /tmp/govee-ble-deploy.tar.gz
+   cd /tmp
+   tar xzf govee-ble-deploy.tar.gz
+   cd govee-ble-deploy
 
-   This creates:
-   - /data/govee-ble/           (application files)
-   - /service/govee-ble/        (runit service)
+4. Run the installation script:
 
-4. Configure your sensors:
+   ./install.sh
+
+   The script will:
+   - Install all files to proper locations
+   - Create default configuration
+   - Prompt you to configure sensors
+   - Optionally start the service
+
+5. Find your Govee sensor MAC addresses:
+
+   /data/govee-ble/find-sensors.sh
+
+   This will scan for nearby Govee sensors and display their
+   MAC addresses in the format needed for configuration.
+
+   NOTE: Govee H510x sensors do NOT display MAC addresses on
+   the device itself or in the Govee mobile app. You MUST use
+   the find-sensors.sh script or btmon to discover them.
+
+6. Edit configuration with your sensor MAC addresses:
 
    vi /data/govee-ble/config.json
 
-   Update with your sensor MAC addresses:
+   Add your sensor MAC addresses to the "allowlist" array.
+   The find-sensors.sh script provides example configuration.
 
-   {
-     "allowlist": [
-       "A4:C1:38:8E:0D:AF",
-       "A4:C1:38:B8:DF:A1"
-     ],
-     "names": {
-       "A4:C1:38:8E:0D:AF": "Freezer",
-       "A4:C1:38:B8:DF:A1": "Fridge"
-     },
-     "temperature_type": {
-       "A4:C1:38:8E:0D:AF": 6,
-       "A4:C1:38:B8:DF:A1": 1
-     }
-   }
+7. Start the service (if not already started):
 
-   Temperature types:
-   0 = Battery, 1 = Fridge, 2 = Generic, 3 = Room,
-   4 = Outdoor, 5 = Water heater, 6 = Freezer
+   svc -u /service/govee-ble
 
-5. Find your sensor MAC addresses:
+8. Verify in Venus OS GUI:
 
-   btmon -T | grep -i gvh
+   Remote Console → Settings → Temperature sensors
 
-   Look for lines like:
-   > HCI Event: LE Meta Event (0x3e)
-       Address: A4:C1:38:8E:0D:AF (OUI A4-C1-38)
-       ...
-       Complete Local Name: GVH5101_0DAF
+   Your sensors should appear within 1-2 minutes.
 
-6. Test manually (recommended before enabling service):
+=========================================================
 
-   python3 /data/govee-ble/govee_ble_service.py \
-       /data/govee-ble/config.json
+WHAT IT DOES
+------------
 
-   Watch for:
-   - "Created service for [MAC]: [Name]"
-   - "Registered D-Bus service: com.victronenergy.temperature.govee_XXXX"
-   - Temperature readings being logged
+This service integrates Govee H5101/H5102/H5104 Bluetooth
+temperature/humidity sensors with Venus OS. Sensors appear as
+native temperature devices in:
 
-   Press Ctrl+C to stop.
+- Remote Console / Local display
+- VRM Portal
+- Device list
+- Historical graphs
 
-7. Verify D-Bus registration:
+REQUIREMENTS
+------------
 
-   In another terminal:
+- Venus OS v2.80+ (Python 3.12+)
+- Govee H5101, H5102, or H5104 sensors
+- Bluetooth adapter (built-in on most Victron devices)
+- Sensors within Bluetooth range (10-30 meters)
 
-   dbus-send --system --print-reply \
-     --dest=org.freedesktop.DBus \
-     /org/freedesktop/DBus \
-     org.freedesktop.DBus.ListNames | grep temperature
+=========================================================
 
-   You should see your govee_XXXX services listed.
+IMPORTANT: FINDING SENSOR MAC ADDRESSES
+----------------------------------------
 
-8. Service will start automatically
+Govee H510x sensors do NOT show their MAC addresses anywhere
+on the physical device or in the Govee mobile app.
 
-   The service starts automatically via runit after extraction.
-   Check status:
+You MUST use one of these methods to find them:
 
-   svstat /service/govee-ble
+Method 1: Use the provided helper script (RECOMMENDED):
 
-9. Verify in Venus OS GUI:
+   /data/govee-ble/find-sensors.sh
 
-   - Remote Console → Settings → Temperature sensors
-   - Your sensors should appear with custom names
-   - Device list should show live readings
+   This scans for 30 seconds and displays all found sensors
+   with their MAC addresses and suggested configuration.
 
-10. Monitor logs:
+Method 2: Manual scanning with btmon:
 
-    tail -f /data/govee-ble/logs/govee_ble.log
+   btmon -T | grep -i -A 3 gvh
+
+   Look for lines showing:
+   Address: A4:C1:38:XX:XX:XX (OUI A4-C1-38)
+   Complete Local Name: GVH5101_XXXX
+
+   The "Address" is what you need (uppercase format).
+
+=========================================================
 
 SERVICE MANAGEMENT
 ------------------
 
-Check status:     svstat /service/govee-ble
-Restart:          svc -t /service/govee-ble
-Stop:             svc -d /service/govee-ble
-Start:            svc -u /service/govee-ble
-View logs:        tail -f /data/govee-ble/logs/govee_ble.log
+Check status:      svstat /service/govee-ble
+Start:             svc -u /service/govee-ble
+Stop:              svc -d /service/govee-ble
+Restart:           svc -t /service/govee-ble
+View logs:         tail -f /data/govee-ble/logs/govee_ble.log
 
 TROUBLESHOOTING
 ---------------
 
-Q: Sensors not appearing?
-A: 1. Check allowlist in config.json
-   2. Verify MAC addresses are uppercase
-   3. Confirm sensors are advertising: btmon -T | grep -i gvh
-   4. Check logs for errors
+Sensors not appearing?
+  1. Run: /data/govee-ble/find-sensors.sh
+  2. Verify MACs are in config.json allowlist
+  3. Check logs: tail -f /data/govee-ble/logs/govee_ble.log
 
-Q: Service won't start?
-A: 1. Check logs: tail -n 50 /data/govee-ble/logs/govee_ble.log
-   2. Verify btmon works: btmon -T | head -n 20
-   3. Test Python imports (see step 6 in INSTALLATION STEPS)
+Service won't start?
+  1. Check logs: tail -n 50 /data/govee-ble/logs/govee_ble.log
+  2. Verify btmon works: btmon -T | head -n 20
+  3. Re-run installer: ./install.sh
 
-Q: Configuration changes not saving?
-A: This is now fixed in v1.0.0. GUI changes persist automatically.
+Configuration not saving from GUI?
+  Fixed in v1.0.0 - GUI changes now persist automatically
 
 UPDATING
 --------
 
-To update to a newer version:
-
-1. Stop service:
-   svc -d /service/govee-ble
-
-2. Backup config (optional):
-   cp /data/govee-ble/config.json /tmp/config.json.backup
-
-3. Extract new tarball:
-   cd /
-   tar xzf /tmp/govee-ble-deploy.tar.gz
-
-4. Restore config if needed:
-   cp /tmp/config.json.backup /data/govee-ble/config.json
-
-5. Start service:
-   svc -u /service/govee-ble
+1. Stop service: svc -d /service/govee-ble
+2. Extract new tarball to /tmp
+3. Run: ./install.sh (preserves existing config)
+4. Service will restart automatically
 
 UNINSTALLING
 ------------
 
 svc -d /service/govee-ble
-rm -rf /service/govee-ble
-rm -rf /data/govee-ble
+rm -rf /service/govee-ble /data/govee-ble
 
 SUPPORT
 -------
@@ -228,10 +218,10 @@ SUPPORT
 Documentation: https://github.com/yourusername/govee-ble-venus-py
 Issues:        https://github.com/yourusername/govee-ble-venus-py/issues
 
-When reporting issues, include:
-- Venus OS version
-- Sensor model
-- Logs from /data/govee-ble/logs/govee_ble.log
+Include when reporting issues:
+- Venus OS version (cat /opt/victronenergy/version)
+- Sensor model (H5101/H5102/H5104)
+- Logs (/data/govee-ble/logs/govee_ble.log)
 
 =========================================================
 EOF

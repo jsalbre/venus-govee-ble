@@ -1,231 +1,443 @@
-# Phase 1 Installation on Venus OS
+# Installation Guide
 
-## Quick Install
+**Version:** 1.0.0
 
-### 1. Transfer Files to Venus OS
+This guide covers installing the Govee BLE Venus OS Bridge on your Victron device.
 
-```bash
-# On your computer, from where you downloaded govee-ble-phase1.tar.gz:
-scp govee-ble-phase1.tar.gz root@<venus-ip>:/data/
+## Quick Installation
 
-# Or use WinSCP / FileZilla if on Windows
-```
+For most users, follow these steps:
 
-### 2. Extract and Test
+1. **Download** the latest `govee-ble-deploy.tar.gz` from [Releases](../../../releases)
+2. **Transfer** to your Venus OS device
+3. **Extract** and follow the included `INSTALL.txt`
 
+The deployment tarball includes comprehensive installation instructions.
+
+## Prerequisites
+
+### Hardware
+- Victron Venus OS device (Cerbo GX, Venus GX, MultiPlus GX, etc.)
+- Bluetooth adapter (most Victron devices have built-in Bluetooth)
+- Govee H5101, H5102, or H5104 temperature/humidity sensors
+
+### Software
+- Venus OS v2.80 or newer (Python 3.12+)
+- Root SSH access enabled
+- `btmon` utility (included in Venus OS)
+
+### Network
+- SSH access to Venus OS device (ethernet or Wi-Fi)
+- Sensors within Bluetooth range (typically 10-30 meters)
+
+## Detailed Installation Steps
+
+### 1. Enable SSH Access
+
+If not already enabled:
+
+1. Connect to your Venus OS device (local display or Remote Console)
+2. Navigate to **Settings → General**
+3. Scroll down to **SSH on LAN**
+4. Enable SSH access
+
+### 2. Find Your Sensor MAC Addresses
+
+You'll need the MAC addresses of your Govee sensors. Two methods:
+
+**Method A: From Govee Mobile App**
+1. Open Govee Home app
+2. Select your sensor
+3. Tap settings/info icon
+4. Look for "MAC Address" or "Bluetooth ID"
+5. Note it down (format: `A4:C1:38:XX:XX:XX`)
+
+**Method B: From Venus OS (via btmon)**
 ```bash
 # SSH to Venus OS
-ssh root@<venus-ip>
+ssh root@venus.local
 
-# Extract
-cd /data
-tar -xzf govee-ble-phase1.tar.gz
-cd govee-ble
+# Scan for Govee devices
+btmon -T | grep -i -A 5 gvh
 
-# Run quick test
-./quicktest.sh
+# Look for lines like:
+# Address: A4:C1:38:8E:0D:AF (OUI A4-C1-38)
+# Complete Local Name: GVH5101_0DAF
 ```
 
-**Expected output:**
-```
-==================================================
-Govee BLE Parser - Phase 1 Quick Test
-==================================================
+Make note of the MAC addresses (the `A4:C1:38:...` part).
 
-1. Checking Python version...
-   Python 3.12.12
+### 3. Transfer Deployment Package
 
-2. Checking btmon...
-   5.72
-
-3. Checking Bluetooth...
-   hci0: UP RUNNING
-
-4. Running parser smoke test...
-   âœ“ Parser test PASSED
-
-5. Running config manager test...
-   âœ“ Config manager test PASSED
-
-6. Scanning for Govee sensors (10 seconds)...
-   [Should see GVH5101 devices]
-
-==================================================
-Phase 1 Quick Test Complete!
-==================================================
-```
-
----
-
-## Validation Workflow
-
-### Step 1: Collect Samples (Venus OS)
+From your computer:
 
 ```bash
-cd /data/govee-ble
-
-# Collect from your two sensors
-python3 validate_parsing.py --collect \
-  --macs A4:C1:38:B8:DF:A1 A4:C1:38:8E:0D:AF \
-  --samples 10 \
-  --duration 120 \
-  --output samples.json
-
-# This will take ~2 minutes and collect 10 samples from each sensor
+# Download govee-ble-deploy.tar.gz from GitHub releases
+# Then transfer to Venus OS:
+scp govee-ble-deploy.tar.gz root@venus.local:/tmp/
 ```
 
-**Expected output:**
-```
-Collected sample 1/10 for A4:C1:38:B8:DF:A1 (H5101): 4.7Â°C, 83.5%, 73%
-Collected sample 2/10 for A4:C1:38:B8:DF:A1 (H5101): 4.7Â°C, 83.5%, 73%
-...
-Collection complete for all target MACs
-Saved 20 samples to samples.json
-```
+### 4. Install on Venus OS
 
-### Step 2: Export from Govee App (iPhone)
-
-1. Open **Govee Home** app
-2. Select your **H5101** sensor (e.g., GVH5101_DFA1)
-3. Tap the **temperature/humidity graph**
-4. Tap the **share/export** icon (usually top-right)
-5. Select **Export as CSV** or **Share**
-6. Email to yourself or use AirDrop
-
-**Note:** Some Govee apps export as:
-- CSV file: `govee_export_2025-01-15.csv`
-- Or in app settings â†’ Data Export
-
-### Step 3: Transfer CSV to Venus OS
+SSH to Venus OS and extract:
 
 ```bash
-# From your computer:
-scp govee_export.csv root@<venus-ip>:/data/govee-ble/
+ssh root@venus.local
+
+# Extract to system directories
+cd /
+tar xzf /tmp/govee-ble-deploy.tar.gz
+
+# This creates:
+#   /data/govee-ble/     - Application files and config
+#   /service/govee-ble/  - Runit service (auto-starts)
 ```
 
-### Step 4: Compare
+### 5. Configure Your Sensors
+
+Edit the configuration file:
 
 ```bash
-# On Venus OS:
-cd /data/govee-ble
-python3 validate_parsing.py --compare samples.json govee_export.csv
+vi /data/govee-ble/config.json
 ```
 
-**Successful output:**
-```
-âœ“ PASS | Time diff: 2.3s
-  Temperature: 22.5Â°C vs 22.5Â°C (diff: 0.00Â°C) âœ“
-  Humidity:    65.2% vs 65.3% (diff: 0.10%) âœ“
-  Battery:     85% vs 85% (diff: 0%) âœ“
+Update with your sensor MAC addresses:
 
-âœ“ ALL COMPARISONS PASSED
+```json
+{
+  "allowlist": [
+    "A4:C1:38:8E:0D:AF",
+    "A4:C1:38:B8:DF:A1"
+  ],
+  "names": {
+    "A4:C1:38:8E:0D:AF": "Freezer",
+    "A4:C1:38:B8:DF:A1": "Fridge"
+  ],
+  "temperature_type": {
+    "A4:C1:38:8E:0D:AF": 6,
+    "A4:C1:38:B8:DF:A1": 1
+  },
+  "temperature_type_default": 2,
+  "log_level": "INFO"
+}
 ```
 
----
+**Important:**
+- MAC addresses must be **uppercase**
+- Match the format exactly: `A4:C1:38:XX:XX:XX`
+- Add all sensors you want to monitor to the `allowlist`
+
+**Temperature Types:**
+| Value | Type | Best For |
+|-------|------|----------|
+| 0 | Battery sensor | Battery compartments |
+| 1 | Fridge | Refrigerators |
+| 2 | Generic | General use (default) |
+| 3 | Room | Indoor ambient temperature |
+| 4 | Outdoor | Outdoor/external sensors |
+| 5 | Water heater | Hot water tanks |
+| 6 | Freezer | Freezers |
+
+### 6. Test Before Enabling Service
+
+It's recommended to test manually first:
+
+```bash
+# Run in foreground to see live output
+python3 /data/govee-ble/govee_ble_service.py \
+    /data/govee-ble/config.json
+
+# Watch for:
+# - "Govee BLE Service v2.0.0 initializing"
+# - "Created service for [MAC]: [Name]"
+# - "Registered D-Bus service: com.victronenergy.temperature.govee_XXXX"
+# - Temperature/humidity readings
+
+# Press Ctrl+C to stop when satisfied
+```
+
+### 7. Verify D-Bus Registration
+
+While the service is running, in another SSH session:
+
+```bash
+# List all temperature services
+dbus-send --system --print-reply \
+  --dest=org.freedesktop.DBus \
+  /org/freedesktop/DBus \
+  org.freedesktop.DBus.ListNames | grep temperature
+
+# You should see lines like:
+# "com.victronenergy.temperature.govee_0daf"
+# "com.victronenergy.temperature.govee_dfa1"
+
+# Read a temperature value
+dbus-send --system --print-reply \
+  --dest=com.victronenergy.temperature.govee_0daf \
+  /Temperature \
+  com.victronenergy.BusItem.GetValue
+```
+
+### 8. Enable Automatic Startup
+
+The service starts automatically via runit after installation. Check status:
+
+```bash
+# Check service status
+svstat /service/govee-ble
+
+# You should see:
+# /service/govee-ble: up (pid XXXXX) X seconds
+
+# If not running, start it:
+svc -u /service/govee-ble
+```
+
+### 9. Verify in Venus OS GUI
+
+1. Open **Remote Console** (or local display)
+2. Navigate to **Settings → Temperature sensors**
+3. Your sensors should appear with custom names
+4. Navigate to **Device list**
+5. Verify temperature readings are updating
+
+### 10. Monitor Logs
+
+```bash
+# View recent logs
+tail -n 100 /data/govee-ble/logs/govee_ble.log
+
+# Follow logs in real-time
+tail -f /data/govee-ble/logs/govee_ble.log
+
+# Look for:
+# - Successful startup messages
+# - "Updated - Temp=X.XC, Humidity=X.X%, Battery=X%"
+# - No error messages
+```
+
+## Post-Installation
+
+### Check VRM Portal
+
+If your Venus OS device is connected to VRM:
+
+1. Log in to [vrm.victronenergy.com](https://vrm.victronenergy.com)
+2. Select your installation
+3. Navigate to **Device List**
+4. Your Govee sensors should appear
+5. Historical data will be available after ~15 minutes
+
+### Customize Names and Types in GUI
+
+You can change sensor names and temperature types directly in Venus OS:
+
+1. **Settings → Temperature sensors**
+2. Select a sensor
+3. Edit **Custom name** or **Temperature type**
+4. Changes are **automatically saved** to config.json
+
+This is a v1.0 feature - GUI changes persist across restarts!
+
+### Set Up Alarms (Optional)
+
+Configure temperature alarms in Venus OS:
+
+1. **Settings → Temperature sensors**
+2. Select sensor
+3. Set **Temperature alarm** thresholds
+4. Configure notification preferences
 
 ## Troubleshooting
 
-### Problem: "btmon not found"
+### Sensors Not Appearing
+
+**Check 1: Verify sensors are in allowlist**
+```bash
+cat /data/govee-ble/config.json | grep -A 5 allowlist
+```
+
+**Check 2: Verify sensors are advertising**
+```bash
+btmon -T | grep -i gvh | head -20
+# Should see your sensor MAC addresses
+```
+
+**Check 3: Check logs for errors**
+```bash
+tail -n 50 /data/govee-ble/logs/govee_ble.log | grep -i error
+```
+
+**Check 4: Verify MAC addresses are uppercase**
+```bash
+cat /data/govee-ble/config.json | grep -E 'a4:c1:38'
+# Should return nothing (all lowercase is wrong)
+```
+
+### Service Won't Start
+
+**Check service status**
+```bash
+svstat /service/govee-ble
+# If "down", check logs for why
+tail -n 50 /data/govee-ble/logs/govee_ble.log
+```
+
+**Verify Python environment**
+```bash
+python3 --version
+# Should be 3.12.12 or newer
+
+# Test imports
+python3 -c "import sys; sys.path.insert(1, '/data/govee-ble/ext/velib_python'); from vedbus import VeDbusService; print('OK')"
+# Should print "OK"
+```
+
+**Check btmon is working**
+```bash
+btmon -T | head -n 20
+# Should show Bluetooth activity
+```
+
+### Readings Not Updating
+
+**Check last update timestamp**
+```bash
+dbus-send --system --print-reply \
+  --dest=com.victronenergy.temperature.govee_0daf \
+  /Mgmt/LastUpdate \
+  com.victronenergy.BusItem.GetValue
+```
+
+**Check sensor is not marked as disconnected**
+```bash
+dbus-send --system --print-reply \
+  --dest=com.victronenergy.temperature.govee_0daf \
+  /Status \
+  com.victronenergy.BusItem.GetValue
+# Should return 0 (OK), not 1 (Disconnected)
+```
+
+**Verify sensor battery**
+- Replace batteries if below 20%
+- Low battery affects transmission range and frequency
+
+### Configuration Changes Not Saving
+
+This was a known issue fixed in v1.0.0. If you're still experiencing this:
+
+1. Verify you're running v1.0.0:
+   ```bash
+   grep __version__ /data/govee-ble/govee_ble_service.py
+   # Should show "2.0.0"
+   ```
+
+2. Check logs for errors:
+   ```bash
+   grep -i "Failed to save" /data/govee-ble/logs/govee_ble.log
+   ```
+
+## Updating
+
+To update to a newer version:
+
+1. Stop the service:
+   ```bash
+   svc -d /service/govee-ble
+   ```
+
+2. **Backup your config** (optional but recommended):
+   ```bash
+   cp /data/govee-ble/config.json /tmp/config.json.backup
+   ```
+
+3. Extract new release:
+   ```bash
+   cd /
+   tar xzf /tmp/govee-ble-deploy.tar.gz
+   ```
+
+4. Restore your config if overwritten:
+   ```bash
+   cp /tmp/config.json.backup /data/govee-ble/config.json
+   ```
+
+5. Start the service:
+   ```bash
+   svc -u /service/govee-ble
+   ```
+
+## Uninstalling
+
+To completely remove the service:
 
 ```bash
-# Check if btmon exists
-which btmon
+# Stop and remove service
+svc -d /service/govee-ble
+rm -rf /service/govee-ble
 
-# If not found, install bluez-utils
-opkg update
-opkg install bluez-utils
+# Remove application files
+rm -rf /data/govee-ble
 ```
 
-### Problem: "No advertisements received"
+Configuration and logs will be removed as well.
+
+## Advanced Configuration
+
+### Change Log Level
+
+For more detailed logging:
 
 ```bash
-# Check Bluetooth status
-hciconfig
+vi /data/govee-ble/config.json
+# Change "log_level": "INFO" to "log_level": "DEBUG"
 
-# Bring up interface
-hciconfig hci0 up
-
-# Enable scanning
-bluetoothctl
-[bluetooth]# scan on
-[bluetooth]# devices
-
-# You should see your Govee sensors listed
+# Restart service
+svc -t /service/govee-ble
 ```
 
-### Problem: "Parser returns None"
+**Warning:** DEBUG logging is verbose and will fill logs faster.
 
-Enable verbose logging:
-```bash
-python3 validate_parsing.py --collect --duration 30 --verbose
+### Adjust Stale Threshold
+
+Change how long before a sensor is marked as disconnected:
+
+```json
+{
+  "stale_threshold_sec": 180
+}
 ```
 
-Look for:
-- `"Could not extract model from name"` - Name format unexpected
-- `"No parser available for model"` - Model not supported
-- `"Invalid H510x marker"` - Wrong data format
+Default is 120 seconds (2 minutes). Increase if sensors are intermittently marked disconnected.
 
-### Problem: "Govee app doesn't have export"
+### Modify Restart Backoff
 
-Try these alternatives:
-1. **Screenshot method:** Take screenshots of the history graph
-2. **Manual CSV:** Create CSV manually from app readings
-3. **API method:** Some Govee devices support API export
+Adjust error recovery timing:
 
-**Manual CSV format:**
-```csv
-Timestamp,Temperature,Humidity,Battery
-2025-01-15 10:30:00,22.5,65.2,85
-2025-01-15 10:31:00,22.4,65.3,85
+```json
+{
+  "restart_min_delay_sec": 30,
+  "restart_max_delay_sec": 300
+}
 ```
 
----
+Service uses exponential backoff between these values after crashes.
 
-## Files Included
+## Getting Help
 
-```
-govee-ble/
-â”œâ”€â”€ parser_adapter.py      - Core parser (H5101/H5102/H5104)
-â”œâ”€â”€ btmon_reader.py        - btmon management
-â”œâ”€â”€ config_manager.py      - Configuration handling
-â”œâ”€â”€ validate_parsing.py    - Validation tool
-â”œâ”€â”€ quicktest.sh           - Quick system test
-â”œâ”€â”€ README_PHASE1.md       - Detailed documentation
-â”œâ”€â”€ PHASE1_SUMMARY.md      - Completion summary
-â””â”€â”€ INSTALL.md             - This file
-```
+If you encounter issues not covered here:
 
----
+1. Check the logs: `/data/govee-ble/logs/govee_ble.log`
+2. Review [Deployment Guide](DEPLOYMENT.md) for advanced troubleshooting
+3. Open an [Issue](../../../issues) on GitHub with:
+   - Venus OS version (`cat /opt/victronenergy/version`)
+   - Sensor model (H5101/H5102/H5104)
+   - Relevant log excerpt
+   - Configuration (with MAC addresses redacted if desired)
 
-## Next Steps After Validation
+## Next Steps
 
-Once validation passes:
-
-1. **Report results** - Share comparison output
-2. **Identify any issues** - If any comparisons fail, we'll debug
-3. **Proceed to Phase 2** - D-Bus integration and full system
-
----
-
-## Support
-
-If you encounter issues:
-
-1. Run `./quicktest.sh` and share output
-2. Run with `--verbose` flag for detailed logs
-3. Share btmon output: `btmon -T 2>&1 | grep -A 15 GVH5101 | head -50`
-4. Check system: `python3 --version`, `hciconfig`, `bluetoothctl list`
-
----
-
-## What's Working
-
-After successful installation:
-- âœ… Parse H5101/H5102/H5104 sensors
-- âœ… Detect Govee devices automatically
-- âœ… Read live BLE advertisements
-- âœ… Compare against app exports
-- âœ… Safe configuration management
-- âœ… Comprehensive error handling
-
-Ready for Phase 2 after validation!
+- Configure temperature alarms in Venus OS
+- Monitor sensors in VRM Portal
+- Set up notifications for out-of-range temperatures
+- Consider adding more sensors (just update config.json)

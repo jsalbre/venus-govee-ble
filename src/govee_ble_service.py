@@ -166,6 +166,46 @@ class GoveeBLEService:
         instance = int(mac_hex, 16) % 100
         return instance
 
+    def _save_custom_name(self, mac_address: str, new_name: str):
+        """
+        Save custom name change to config file.
+
+        Args:
+            mac_address: Sensor MAC address
+            new_name: New custom name
+        """
+        try:
+            # Update in-memory config
+            if 'names' not in self.config:
+                self.config['names'] = {}
+            self.config['names'][mac_address] = new_name
+
+            # Write to file
+            self.config_manager.write(self.config)
+            _LOGGER.info(f"Saved CustomName for {mac_address}: '{new_name}'")
+        except Exception as e:
+            _LOGGER.error(f"Failed to save CustomName for {mac_address}: {e}", exc_info=True)
+
+    def _save_temperature_type(self, mac_address: str, new_type: int):
+        """
+        Save temperature type change to config file.
+
+        Args:
+            mac_address: Sensor MAC address
+            new_type: New temperature type
+        """
+        try:
+            # Update in-memory config
+            if 'temperature_type' not in self.config:
+                self.config['temperature_type'] = {}
+            self.config['temperature_type'][mac_address] = new_type
+
+            # Write to file
+            self.config_manager.write(self.config)
+            _LOGGER.info(f"Saved TemperatureType for {mac_address}: {new_type}")
+        except Exception as e:
+            _LOGGER.error(f"Failed to save TemperatureType for {mac_address}: {e}", exc_info=True)
+
     def _create_service_for_sensor(self, mac_address: str) -> GoveeTemperatureService:
         """
         Create D-Bus service for a sensor.
@@ -197,13 +237,15 @@ class GoveeBLEService:
         import dbus
         dbusconn = dbus.SystemBus(private=True)
 
-        # Create the service with its own D-Bus connection
+        # Create the service with its own D-Bus connection and config callbacks
         service = GoveeTemperatureService(
             mac_address=mac_address,
             device_name=device_name,
             device_instance=device_instance,
             temperature_type=temp_type,
-            dbusconn=dbusconn
+            dbusconn=dbusconn,
+            on_name_change=self._save_custom_name,
+            on_type_change=self._save_temperature_type
         )
 
         _LOGGER.info(

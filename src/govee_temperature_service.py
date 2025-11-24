@@ -39,7 +39,7 @@ class GoveeTemperatureService:
 
     def __init__(self, mac_address: str, device_name: str,
                  device_instance: int, temperature_type: int = TEMP_TYPE_GENERIC,
-                 dbusconn=None):
+                 dbusconn=None, on_name_change=None, on_type_change=None):
         """
         Initialize Govee temperature service.
 
@@ -49,11 +49,15 @@ class GoveeTemperatureService:
             device_instance: Unique device instance number (0-99)
             temperature_type: 0=battery, 1=fridge, 2=generic
             dbusconn: D-Bus connection (None = auto-detect system/session bus)
+            on_name_change: Callback function(mac, new_name) when CustomName changes
+            on_type_change: Callback function(mac, new_type) when TemperatureType changes
         """
         self.mac_address = mac_address.upper()
         self.device_name = device_name
         self.device_instance = device_instance
         self.temperature_type = temperature_type
+        self.on_name_change = on_name_change
+        self.on_type_change = on_type_change
 
         # Service name: com.victronenergy.temperature.govee_XXXX
         # Use last 4 hex chars of MAC (without colons)
@@ -77,6 +81,24 @@ class GoveeTemperatureService:
             f"(instance={device_instance}, type={temperature_type})"
         )
 
+    def _handle_name_change(self, path, value):
+        """Handle CustomName change from Venus OS GUI."""
+        if value != self.device_name:
+            _LOGGER.info(f"{self.service_name}: CustomName changed to '{value}'")
+            self.device_name = value
+            if self.on_name_change:
+                self.on_name_change(self.mac_address, value)
+        return True  # Accept the change
+
+    def _handle_type_change(self, path, value):
+        """Handle TemperatureType change from Venus OS GUI."""
+        if value != self.temperature_type:
+            _LOGGER.info(f"{self.service_name}: TemperatureType changed to {value}")
+            self.temperature_type = value
+            if self.on_type_change:
+                self.on_type_change(self.mac_address, value)
+        return True  # Accept the change
+
     def _add_paths(self):
         """Add all D-Bus paths for temperature sensor."""
 
@@ -98,8 +120,11 @@ class GoveeTemperatureService:
         self._dbusservice.add_path('/Humidity', value=None, description='Relative humidity in percent')
         self._dbusservice.add_path('/Status', value=self.STATUS_OK, description='Status: 0=Ok, 1=Disconnected')
         self._dbusservice.add_path('/TemperatureType', value=self.temperature_type, writeable=True,
+                                   onchangecallback=self._handle_type_change,
                                    description='0=battery, 1=fridge, 2=generic, 3=room, 4=outdoor, 5=waterheater, 6=freezer')
-        self._dbusservice.add_path('/CustomName', value=self.device_name, writeable=True, description='Custom name')
+        self._dbusservice.add_path('/CustomName', value=self.device_name, writeable=True,
+                                   onchangecallback=self._handle_name_change,
+                                   description='Custom name')
 
         # Additional info paths
         self._dbusservice.add_path('/Battery', value=None, description='Battery level percentage')

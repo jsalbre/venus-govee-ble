@@ -195,14 +195,14 @@ def parse_h510x_manufacturer_data(data: bytes) -> Optional[Dict]:
     
     # Debug logging with both packet and individual bytes for analysis
     _LOGGER.debug(
-        f"Raw: {data.hex()} â†’ packet=0x{packet_value:06x}({packet_value}), "
+        f"Raw: {data.hex()} -> packet=0x{packet_value:06x}({packet_value}), "
         f"bytes[2-4]=0x{data[2]:02x}{data[3]:02x}{data[4]:02x}, "
-        f"temp={temp_c:.1f}Â°C, hum={humidity:.1f}%, batt={battery}%"
+        f"temp={temp_c:.1f}C, hum={humidity:.1f}%, batt={battery}%"
     )
     
     # Plausibility checks
     if temp_c < -40.0 or temp_c > 85.0:
-        _LOGGER.warning(f"Temperature out of plausible range: {temp_c:.1f}Â°C")
+        _LOGGER.warning(f"Temperature out of plausible range: {temp_c:.1f}C")
         temp_c = None
     
     if humidity < 0.0 or humidity > 100.0:

@@ -8,12 +8,13 @@ Full integration of Govee H5101/H5102/H5104 temperature/humidity sensors with Vi
 
 ### Scripted Installation
 - **install.sh** - One-command automated installation
-- **find-sensors.sh** - Bluetooth scanner to discover sensor MAC addresses
+- **add-sensor.sh** - Helper script to add sensors to allowlist
 - No manual file copying or directory creation required
 - Interactive service startup
+- Automatic backup of existing installations
 
 ### Sensor Discovery
-Critical feature: Govee H510x sensors do NOT display MAC addresses on the device or in the Govee mobile app. The `find-sensors.sh` tool solves this by scanning Bluetooth and displaying all discovered sensors with their MAC addresses and suggested configuration.
+Critical feature: Govee H510x sensors do NOT display MAC addresses on the device or in the Govee mobile app. The service automatically discovers and logs Govee sensors, displaying their MAC addresses in the log output for easy identification and configuration.
 
 ### Native Venus OS Integration
 - Sensors appear in **Settings → Temperature sensors**
@@ -57,14 +58,17 @@ tar xzf govee-ble-deploy.tar.gz
 cd govee-ble-deploy
 ./install.sh
 
-# Find your sensors (MACs not visible on device!)
-/data/govee-ble/find-sensors.sh
+# Start service to discover sensors (MACs not visible on device!)
+svc -u /service/govee-ble
 
-# Configure
+# Monitor logs for discovered sensors
+tail -f /data/govee-ble/logs/govee_ble.log
+
+# Configure with discovered MAC addresses
 vi /data/govee-ble/config.json
 
-# Start
-svc -u /service/govee-ble
+# Restart service
+svc -t /service/govee-ble
 ```
 
 ## 📦 What's Included
@@ -74,8 +78,8 @@ svc -u /service/govee-ble
 - **parser_adapter.py** - BLE advertisement parser (v1.0.3)
 - **btmon_reader.py** - btmon process manager with watchdog
 - **config_manager.py** - Thread-safe configuration with atomic writes
-- **install.sh** - Automated installation script
-- **find-sensors.sh** - Sensor discovery tool
+- **install.sh** - Automated installation script with backup
+- **add-sensor.sh** - Helper script to add sensors to allowlist
 - **Service files** - Runit service for auto-start
 - **Dependencies** - Victron velib_python library
 

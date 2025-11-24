@@ -1,6 +1,6 @@
 # Govee BLE Project - Conversation Continuity Document
-**Last Updated:** 2025-11-23 (Phase 2 Bug Fixes - Testing in Progress)
-**Project Phase:** Phase 2 TESTING - Bug Fixes Applied
+**Last Updated:** 2025-11-24 (v1.1.0 Released - Bug Fixes and Polish)
+**Project Phase:** v1.1.0 PRODUCTION - Stable with Automated Deployment
 
 ---
 
@@ -28,7 +28,102 @@ Jeremy is building a Govee BLE bridge for Venus OS (Cerbo GX) to integrate H5101
 
 ---
 
-## Current Status: Phase 2 TESTING - Bug Fixes Applied (2025-11-23) ⏳
+## Current Status: v1.1.0 PRODUCTION RELEASE (2025-11-24) ✅
+
+### Release v1.1.0 - Bug Fixes and Polish
+
+**Status:** Stable, all installation and discovery issues resolved
+
+**Fixes in v1.1.0:**
+
+1. **Installation Improvements**
+   - Automatic backup before updates
+   - Service stop before file updates
+   - Accurate sensor count detection (Python JSON parsing)
+   - Boot persistence via /data storage and rc.local
+
+2. **Helper Script Fixes**
+   - add-sensor.sh: Fixed ANSI color codes printing literally
+   - add-sensor.sh: Anonymized MAC addresses in examples
+   - Removed find-sensors.sh (replaced with automatic log-based discovery)
+
+3. **Configuration Updates**
+   - Stale threshold: 120s → 300s
+   - Device ID range: 0-99 → 400-499
+
+4. **Documentation Polish**
+   - Added BLE decoding formulas with real examples
+   - Removed all find-sensors.sh references
+   - Corrected sensor discovery instructions
+   - Anonymized all MAC addresses
+   - Updated GitHub username
+
+**Deployment Package:**
+- Location: `dist/govee-ble-deploy.tar.gz` (72K)
+- Version: v1.1.0
+- Files: 43 total
+
+---
+
+## Previous Release: v1.0.0 PRODUCTION RELEASE (2025-11-24)
+
+### Release v1.0.0 - Production-Ready Deployment Package
+
+**Status:** Feature complete, validated, and ready for deployment
+
+**Major Improvements Since Phase 2:**
+
+1. **Automated Installation System**
+   - `install.sh` - One-command automated installation
+   - `add-sensor.sh` - Helper script to add sensors to allowlist
+   - Automatic backup of existing installations before update
+   - Service stop/start automation
+   - Boot persistence via /data/rc.local
+
+2. **Automatic Sensor Discovery**
+   - Service logs all discovered Govee sensors automatically
+   - No separate discovery tool needed
+   - Log format: "Discovered Govee sensor not in allowlist: MAC (name)"
+   - Users monitor logs to find sensor MAC addresses
+
+3. **Documentation Overhaul**
+   - README.md - Production-ready user guide with BLE decoding formulas
+   - CHANGELOG.md - Complete version history
+   - INSTALL.txt - Simplified installation instructions
+   - Technical details section with real decoding examples
+   - All MAC addresses anonymized (kept OUI A4:C1:38)
+
+4. **Configuration Management**
+   - Stale threshold increased: 120s → 300s
+   - Device ID range: 400-499 (was 0-99)
+   - Temperature types: 0=Battery, 1=Fridge, 2=Generic, 3=Room, 4=Outdoor, 5=Water heater, 6=Freezer
+   - Config persistence: GUI changes auto-save to config.json
+
+5. **Service Improvements**
+   - Service persistence across reboots (/data/govee-ble/service)
+   - Automatic symlink creation in rc.local
+   - Proper stop sequence during updates
+   - Accurate sensor count detection (Python JSON parsing)
+
+6. **Build System**
+   - Local build directory: `/Volumes/Repo/Development/govee-ble-venus-py/build/`
+   - Release artifacts: `/Volumes/Repo/Development/govee-ble-venus-py/dist/`
+   - Tarball includes: README.md, CHANGELOG.md, add-sensor.sh
+   - No meta files in deployment (dev-notes, samples excluded)
+
+**Deployment Package:**
+- Location: `dist/govee-ble-deploy.tar.gz` (72K)
+- GitHub repo: `jsalbre/govee-ble-venus-py`
+- Files: 43 total (service files, scripts, documentation)
+
+**Known Limitations:**
+- Humidity: ~15-20% discrepancy vs Govee app (algorithm limitation)
+- Temperature and battery: Highly accurate (±0.5°C, exact match)
+- Models: Only H510x family supported (H5075, H5074 parsers not implemented)
+
+---
+
+## Previous Phase: Phase 2 TESTING - Bug Fixes Applied (2025-11-23)
 
 ### Phase 2 Bugs Found and Fixed During Testing
 

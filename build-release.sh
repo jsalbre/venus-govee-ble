@@ -4,10 +4,13 @@
 
 set -e  # Exit on error
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 RELEASE_NAME="govee-ble-deploy"
-BUILD_DIR="/tmp/${RELEASE_NAME}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${SCRIPT_DIR}/build/${RELEASE_NAME}"
+DIST_DIR="${SCRIPT_DIR}/dist"
 TARBALL_NAME="${RELEASE_NAME}.tar.gz"
+TARBALL_PATH="${DIST_DIR}/${TARBALL_NAME}"
 
 echo "========================================"
 echo "Building Govee BLE Venus OS v${VERSION}"
@@ -20,10 +23,11 @@ if [ -d "$BUILD_DIR" ]; then
     rm -rf "$BUILD_DIR"
 fi
 
-# Create build structure
+# Create build and dist directories
 echo "Creating build directory structure..."
 mkdir -p "$BUILD_DIR/data/govee-ble"
 mkdir -p "$BUILD_DIR/service/govee-ble"
+mkdir -p "$DIST_DIR"
 
 # Copy source files
 echo "Copying source files..."
@@ -51,20 +55,25 @@ chmod +x "$BUILD_DIR/service/govee-ble/run"
 # Copy helper scripts
 echo "Copying helper scripts..."
 cp install.sh "$BUILD_DIR/"
-cp find-sensors.sh "$BUILD_DIR/data/govee-ble/"
+cp add-sensor.sh "$BUILD_DIR/data/govee-ble/"
 chmod +x "$BUILD_DIR/install.sh"
-chmod +x "$BUILD_DIR/data/govee-ble/find-sensors.sh"
+chmod +x "$BUILD_DIR/data/govee-ble/add-sensor.sh"
 
 # Copy example config as default config
 echo "Copying configuration template..."
 cp config.example.json "$BUILD_DIR/data/govee-ble/config.json"
+
+# Copy documentation files
+echo "Copying documentation..."
+cp README.md "$BUILD_DIR/"
+cp CHANGELOG.md "$BUILD_DIR/"
 
 # Create INSTALL.txt
 echo "Creating installation instructions..."
 cat > "$BUILD_DIR/INSTALL.txt" << 'EOF'
 =========================================================
 Govee BLE Venus OS Bridge - Installation Instructions
-Version: 1.0.0
+Version: 1.1.0
 =========================================================
 
 QUICK START
@@ -89,28 +98,35 @@ QUICK START
    ./install.sh
 
    The script will:
+   - Automatically backup existing installation (if present)
    - Install all files to proper locations
    - Create default configuration
    - Prompt you to configure sensors
    - Optionally start the service
 
+   IMPORTANT: If updating, your previous installation is automatically
+   backed up to /data/govee-ble.backup.YYYYMMDD_HHMMSS for safety.
+
 5. Find your Govee sensor MAC addresses:
 
-   /data/govee-ble/find-sensors.sh
+   The service automatically logs discovered Govee sensors.
+   Start the service and monitor the logs:
 
-   This will scan for nearby Govee sensors and display their
-   MAC addresses in the format needed for configuration.
+   svc -u /service/govee-ble
+   tail -f /data/govee-ble/logs/govee_ble.log
+
+   Look for lines like:
+   "Discovered Govee sensor not in allowlist: A4:C1:38:XX:XX:XX (GVH5101_XXXX)"
 
    NOTE: Govee H510x sensors do NOT display MAC addresses on
-   the device itself or in the Govee mobile app. You MUST use
-   the find-sensors.sh script or btmon to discover them.
+   the device itself or in the Govee mobile app.
 
 6. Edit configuration with your sensor MAC addresses:
 
    vi /data/govee-ble/config.json
 
    Add your sensor MAC addresses to the "allowlist" array.
-   The find-sensors.sh script provides example configuration.
+   You can also use the add-sensor.sh helper script.
 
 7. Start the service (if not already started):
 
@@ -154,12 +170,15 @@ on the physical device or in the Govee mobile app.
 
 You MUST use one of these methods to find them:
 
-Method 1: Use the provided helper script (RECOMMENDED):
+Method 1 (RECOMMENDED): Monitor service logs
 
-   /data/govee-ble/find-sensors.sh
+   The service automatically discovers and logs Govee sensors.
+   Start the service and watch the logs:
 
-   This scans for 30 seconds and displays all found sensors
-   with their MAC addresses and suggested configuration.
+   svc -u /service/govee-ble
+   tail -f /data/govee-ble/logs/govee_ble.log
+
+   Look for: "Discovered Govee sensor not in allowlist:"
 
 Method 2: Manual scanning with btmon:
 
@@ -186,9 +205,9 @@ TROUBLESHOOTING
 ---------------
 
 Sensors not appearing?
-  1. Run: /data/govee-ble/find-sensors.sh
+  1. Check logs for discovered sensors: tail -f /data/govee-ble/logs/govee_ble.log
   2. Verify MACs are in config.json allowlist
-  3. Check logs: tail -f /data/govee-ble/logs/govee_ble.log
+  3. Ensure sensors have fresh batteries and are in range
 
 Service won't start?
   1. Check logs: tail -n 50 /data/govee-ble/logs/govee_ble.log
@@ -201,10 +220,22 @@ Configuration not saving from GUI?
 UPDATING
 --------
 
-1. Stop service: svc -d /service/govee-ble
-2. Extract new tarball to /tmp
-3. Run: ./install.sh (preserves existing config)
-4. Service will restart automatically
+1. Download new release tarball
+2. Transfer to Venus OS and extract:
+   scp govee-ble-deploy.tar.gz root@venus.local:/tmp/
+   cd /tmp && tar xzf govee-ble-deploy.tar.gz
+3. Run installer: cd govee-ble-deploy && ./install.sh
+
+The installer automatically:
+- Backs up your current installation
+- Preserves your configuration
+- Stops/restarts the service
+
+To restore a backup if needed:
+   svc -d /service/govee-ble
+   rm -rf /data/govee-ble
+   mv /data/govee-ble.backup.YYYYMMDD_HHMMSS /data/govee-ble
+   svc -u /service/govee-ble
 
 UNINSTALLING
 ------------
@@ -215,8 +246,8 @@ rm -rf /service/govee-ble /data/govee-ble
 SUPPORT
 -------
 
-Documentation: https://github.com/yourusername/govee-ble-venus-py
-Issues:        https://github.com/yourusername/govee-ble-venus-py/issues
+Documentation: https://github.com/jsalbre/govee-ble-venus-py
+Issues:        https://github.com/jsalbre/govee-ble-venus-py/issues
 
 Include when reporting issues:
 - Venus OS version (cat /opt/victronenergy/version)
@@ -228,25 +259,25 @@ EOF
 
 # Create tarball
 echo "Creating tarball..."
-cd /tmp
-tar czf "$TARBALL_NAME" "$RELEASE_NAME"
-
-# Copy to project directory
-cp "$TARBALL_NAME" "$OLDPWD/"
+cd "${SCRIPT_DIR}/build"
+tar czf "$TARBALL_PATH" "$RELEASE_NAME"
 
 echo
 echo "========================================"
 echo "Build complete!"
 echo "========================================"
 echo
-echo "Output: $TARBALL_NAME"
-echo "Size:   $(du -h $TARBALL_NAME | cut -f1)"
+echo "Output: ${TARBALL_PATH}"
+echo "Size:   $(du -h "$TARBALL_PATH" | cut -f1)"
 echo
 echo "Contents:"
-tar tzf "$TARBALL_NAME" | head -20
+tar tzf "$TARBALL_PATH" | head -20
 echo "..."
-echo "($(tar tzf $TARBALL_NAME | wc -l) files total)"
+echo "($(tar tzf "$TARBALL_PATH" | wc -l) files total)"
 echo
 echo "To test:"
-echo "  tar tzf $TARBALL_NAME | grep -E '(dev-notes|samples|\.git)' || echo 'No meta files found - OK!'"
+echo "  tar tzf \"$TARBALL_PATH\" | grep -E '(dev-notes|samples|\.git)' || echo 'No meta files found - OK!'"
+echo
+echo "Deploy to Venus OS:"
+echo "  scp \"$TARBALL_PATH\" root@venus.local:/tmp/"
 echo

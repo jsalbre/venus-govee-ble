@@ -5,6 +5,36 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-24
+
+### Fixed
+
+#### Installation & Deployment
+- **Automatic Backup** - Installer now backs up existing installation to `/data/govee-ble.backup.YYYYMMDD_HHMMSS` before updating
+- **Service Stop Sequence** - Service properly stopped before file updates to prevent file-in-use issues
+- **Sensor Count Detection** - Fixed false positive sensor counts using Python JSON parsing instead of regex
+- **Boot Persistence** - Service now properly persists across reboots via /data storage and rc.local
+
+#### Helper Scripts
+- **add-sensor.sh** - Fixed ANSI color codes printing literally by removing bash variables from Python output
+- **add-sensor.sh** - Anonymized MAC addresses in usage examples
+- **Removed find-sensors.sh** - Replaced with automatic discovery via service logs (simpler, more reliable)
+
+#### Configuration
+- **Stale Threshold** - Increased from 120s to 300s for better sensor reliability
+- **Device ID Range** - Changed from 0-99 to 400-499 to avoid conflicts with other Venus OS devices
+
+#### Documentation
+- **README.md** - Added BLE data decoding formulas with real examples
+- **README.md** - Removed all find-sensors.sh references, updated discovery method
+- **docs/INSTALL.md** - Corrected sensor discovery instructions (Govee app doesn't show MACs)
+- **All files** - Anonymized MAC addresses (kept OUI A4:C1:38)
+- **All files** - Updated GitHub username from placeholder to jsalbre
+
+### Changed
+- **Discovery Method** - Users now monitor service logs instead of running separate discovery script
+- **Build System** - Moved from /tmp to local build/ and dist/ directories
+
 ## [1.0.0] - 2025-11-24
 
 ### 🎉 Initial Production Release
@@ -168,4 +198,4 @@ None (initial release)
 ---
 
 **Format:** [Version] - YYYY-MM-DD
-**Links:** [1.0.0] = https://github.com/yourusername/govee-ble-venus-py/releases/tag/v1.0.0
+**Links:** [1.0.0] = https://github.com/jsalbre/govee-ble-venus-py/releases/tag/v1.0.0

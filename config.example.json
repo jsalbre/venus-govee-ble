@@ -8,7 +8,7 @@
   "log_level": "INFO",
   "log_path": "/data/govee-ble/logs/govee_ble.log",
   "update_interval_sec": 1,
-  "stale_threshold_sec": 120,
+  "stale_threshold_sec": 300,
   "restart_min_delay_sec": 30,
   "restart_max_delay_sec": 300,
   "battery": {

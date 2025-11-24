@@ -1,10 +1,10 @@
 #!/bin/bash
 # Govee BLE Venus OS - Installation Script
-# Version: 1.0.0
+# Version: 1.1.0
 
 set -e  # Exit on error
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Color output (if supported)
@@ -62,25 +62,44 @@ fi
 echo_info "Installing Govee BLE Service..."
 echo
 
-# Step 1: Create directories
+# Step 0: Stop service if running (before backup/update)
+if [ -d /service/govee-ble ]; then
+    echo_info "Stopping existing service..."
+    svc -d /service/govee-ble 2>/dev/null || true
+    sleep 2
+    echo_success "Service stopped"
+    echo
+fi
+
+# Step 1: Backup existing installation if present
+BACKUP_DIR=""
+if [ -d /data/govee-ble ]; then
+    BACKUP_DIR="/data/govee-ble.backup.$(date +%Y%m%d_%H%M%S)"
+    echo_info "Backing up existing installation..."
+    cp -r /data/govee-ble "$BACKUP_DIR"
+    echo_success "Backup saved to: $BACKUP_DIR"
+    echo
+fi
+
+# Step 2: Create directories
 echo_info "Creating directories..."
 mkdir -p /data/govee-ble/logs
 mkdir -p /data/govee-ble/ext
 mkdir -p /service
 echo_success "Directories created"
 
-# Step 2: Copy source files
+# Step 3: Copy source files
 echo_info "Copying application files..."
 cp -f "$SCRIPT_DIR"/data/govee-ble/*.py /data/govee-ble/
 chmod +x /data/govee-ble/govee_ble_service.py
 echo_success "Application files installed"
 
-# Step 3: Copy velib_python dependency
+# Step 4: Copy velib_python dependency
 echo_info "Installing dependencies..."
 cp -rf "$SCRIPT_DIR"/data/govee-ble/ext/velib_python /data/govee-ble/ext/
 echo_success "Dependencies installed"
 
-# Step 4: Handle configuration file
+# Step 5: Handle configuration file
 if [ -f /data/govee-ble/config.json ]; then
     echo_warning "Existing config.json found - keeping your configuration"
     echo_info "Backup saved to: /data/govee-ble/config.json.backup.$(date +%Y%m%d_%H%M%S)"
@@ -92,23 +111,16 @@ else
     echo_warning "You must edit config.json and add your sensor MAC addresses!"
 fi
 
-# Step 5: Copy helper scripts
+# Step 6: Copy helper scripts
 echo_info "Installing helper scripts..."
-if [ -f "$SCRIPT_DIR"/data/govee-ble/find-sensors.sh ]; then
-    cp -f "$SCRIPT_DIR"/data/govee-ble/find-sensors.sh /data/govee-ble/
-    chmod +x /data/govee-ble/find-sensors.sh
+if [ -f "$SCRIPT_DIR"/data/govee-ble/add-sensor.sh ]; then
+    cp -f "$SCRIPT_DIR"/data/govee-ble/add-sensor.sh /data/govee-ble/
+    chmod +x /data/govee-ble/add-sensor.sh
     echo_success "Helper scripts installed"
 fi
 
-# Step 6: Install service (Venus OS style - persist across reboots)
+# Step 7: Install service (Venus OS style - persist across reboots)
 echo_info "Installing runit service..."
-
-# Stop existing service if running
-if [ -d /service/govee-ble ]; then
-    echo_info "Stopping existing service..."
-    svc -d /service/govee-ble 2>/dev/null || true
-    sleep 2
-fi
 
 # Copy service files to /data (persists across reboots)
 echo_info "Installing service files to /data/govee-ble/service..."
@@ -143,7 +155,7 @@ fi
 
 echo_success "Service installed and configured for boot persistence"
 
-# Step 7: Check configuration
+# Step 8: Check configuration
 echo
 echo "==========================================="
 echo "  Installation Complete!"
@@ -157,22 +169,20 @@ if [ ! -s /data/govee-ble/config.json ] || ! grep -q '"allowlist"' /data/govee-b
     echo "  1. Find your Govee sensor MAC addresses"
     echo "  2. Add them to /data/govee-ble/config.json"
     echo
-    echo "To find your sensors, run:"
-    echo "  /data/govee-ble/find-sensors.sh"
-    echo
-    echo "Or manually scan:"
-    echo "  btmon -T | grep -i gvh"
+    echo "The service will log discovered sensors automatically."
+    echo "Monitor logs to find sensor MAC addresses:"
+    echo "  tail -f /data/govee-ble/logs/govee_ble.log"
     echo
     CONFIG_READY=false
 else
-    # Check if allowlist has any actual entries (look for pattern inside the array)
-    # This checks for quoted strings that look like MAC addresses within the allowlist array
-    SENSOR_COUNT=$(grep -A 20 '"allowlist"' /data/govee-ble/config.json | grep -E '^\s*"[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}"' | wc -l | tr -d ' ')
+    # Check if allowlist has any actual entries using Python for accurate JSON parsing
+    SENSOR_COUNT=$(python3 -c "import json; f=open('/data/govee-ble/config.json'); c=json.load(f); print(len(c.get('allowlist', [])))" 2>/dev/null || echo "0")
     if [ "$SENSOR_COUNT" -eq 0 ]; then
         echo_warning "No sensors configured in allowlist!"
         echo
-        echo "To find your sensors, run:"
-        echo "  /data/govee-ble/find-sensors.sh"
+        echo "The service will log discovered sensors automatically."
+        echo "Monitor logs to find sensor MAC addresses:"
+        echo "  tail -f /data/govee-ble/logs/govee_ble.log"
         echo
         echo "Then edit /data/govee-ble/config.json to add them."
         echo
@@ -183,54 +193,81 @@ else
     fi
 fi
 
-# Offer to start service if config looks ready
-if [ "$CONFIG_READY" = true ]; then
+# Notify if no sensors configured, but start service anyway
+if [ "$CONFIG_READY" != true ]; then
+    echo_warning "No sensors configured in allowlist!"
     echo
-    read -p "Start the service now? (y/n) " -n 1 -r
+    echo "The service will start and log any Govee sensors it discovers."
+    echo "To monitor specific sensors, you need to add them to the allowlist."
     echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo_info "Starting service..."
-        svc -u /service/govee-ble
-        sleep 2
+    echo "How to find sensor MAC addresses:"
+    echo "  1. Start the service: svc -u /service/govee-ble"
+    echo "  2. Monitor logs: tail -f /data/govee-ble/logs/govee_ble.log"
+    echo "  3. Look for: 'Discovered Govee sensor not in allowlist: MAC (name)'"
+    echo
+    echo "After finding your sensor MAC addresses:"
+    echo "  1. Edit: /data/govee-ble/config.json"
+    echo "  2. Add MAC addresses to the 'allowlist' array"
+    echo "  3. Restart service: svc -t /service/govee-ble"
+    echo
+fi
 
-        # Check status
-        if svstat /service/govee-ble | grep -q "up"; then
-            echo_success "Service started successfully!"
-            echo
-            echo "Monitor logs with:"
-            echo "  tail -f /data/govee-ble/logs/govee_ble.log"
-            echo
-            echo "Check status with:"
-            echo "  svstat /service/govee-ble"
-        else
-            echo_error "Service failed to start"
-            echo "Check logs: tail -n 50 /data/govee-ble/logs/govee_ble.log"
-        fi
+# Always offer to start the service
+echo
+read -p "Start the service now? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo_info "Starting service..."
+    svc -u /service/govee-ble
+    sleep 2
+
+    # Check status
+    if svstat /service/govee-ble | grep -q "up"; then
+        echo_success "Service started successfully!"
+        echo
+        echo "Monitor logs with:"
+        echo "  tail -f /data/govee-ble/logs/govee_ble.log"
+        echo
+        echo "Check status with:"
+        echo "  svstat /service/govee-ble"
     else
-        echo_info "Service not started"
-        echo "Start manually with: svc -u /service/govee-ble"
+        echo_error "Service failed to start"
+        echo "Check logs: tail -n 50 /data/govee-ble/logs/govee_ble.log"
     fi
 else
-    echo_warning "Service NOT started - configuration required first"
-    echo
-    echo "After configuring sensors:"
-    echo "  1. Edit: /data/govee-ble/config.json"
-    echo "  2. Start service: svc -u /service/govee-ble"
-    echo "  3. Check logs: tail -f /data/govee-ble/logs/govee_ble.log"
+    echo_info "Service not started"
+    echo "Start manually with: svc -u /service/govee-ble"
 fi
 
 echo
+if [ -n "$BACKUP_DIR" ]; then
+    echo "==========================================="
+    echo "  Backup Information"
+    echo "==========================================="
+    echo
+    echo_success "Previous installation backed up to:"
+    echo "  $BACKUP_DIR"
+    echo
+    echo "To restore backup if needed:"
+    echo "  svc -d /service/govee-ble"
+    echo "  rm -rf /data/govee-ble"
+    echo "  mv $BACKUP_DIR /data/govee-ble"
+    echo "  svc -u /service/govee-ble"
+    echo
+fi
+
 echo "==========================================="
 echo "  Useful Commands"
 echo "==========================================="
 echo
-echo "Find sensors:     /data/govee-ble/find-sensors.sh"
+echo "Add sensor:       /data/govee-ble/add-sensor.sh <MAC> [name] [type]"
 echo "Edit config:      vi /data/govee-ble/config.json"
 echo "Start service:    svc -u /service/govee-ble"
 echo "Stop service:     svc -d /service/govee-ble"
 echo "Restart service:  svc -t /service/govee-ble"
 echo "Check status:     svstat /service/govee-ble"
 echo "View logs:        tail -f /data/govee-ble/logs/govee_ble.log"
+echo "Find sensors:     Look for 'Discovered Govee sensor' in logs"
 echo
-echo "Documentation:    https://github.com/yourusername/govee-ble-venus-py"
+echo "Documentation:    https://github.com/jsalbre/govee-ble-venus-py"
 echo

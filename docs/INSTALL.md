@@ -43,16 +43,29 @@ If not already enabled:
 
 ### 2. Find Your Sensor MAC Addresses
 
-You'll need the MAC addresses of your Govee sensors. Two methods:
+**IMPORTANT:** Govee H510x sensors do NOT display MAC addresses on the device or in the Govee mobile app.
 
-**Method A: From Govee Mobile App**
-1. Open Govee Home app
-2. Select your sensor
-3. Tap settings/info icon
-4. Look for "MAC Address" or "Bluetooth ID"
-5. Note it down (format: `A4:C1:38:XX:XX:XX`)
+You must use one of these methods:
 
-**Method B: From Venus OS (via btmon)**
+**Method A (Recommended): Use Service Discovery**
+
+The service automatically discovers and logs Govee sensors:
+
+```bash
+# SSH to Venus OS
+ssh root@venus.local
+
+# Start the service
+svc -u /service/govee-ble
+
+# Monitor logs for discovered sensors
+tail -f /data/govee-ble/logs/govee_ble.log
+
+# Look for lines like:
+# Discovered Govee sensor not in allowlist: A4:C1:38:XX:XX:XX (GVH5101_XXXX)
+```
+
+**Method B: Manual btmon Scanning**
 ```bash
 # SSH to Venus OS
 ssh root@venus.local

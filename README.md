@@ -1,6 +1,6 @@
 # Govee BLE Venus OS Bridge
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Status:** Production Ready
 
 Python bridge for integrating Govee H510x Bluetooth temperature/humidity sensors with Victron Energy Venus OS.
@@ -82,16 +82,20 @@ The installer automatically:
 
 **Important:** Govee H510x sensors do NOT display MAC addresses on the device or in the Govee app.
 
-Use the discovery tool:
+The service automatically discovers and logs Govee sensors. Start the service and monitor the logs:
 
 ```bash
-/data/govee-ble/find-sensors.sh
+# Start service
+svc -u /service/govee-ble
+
+# Watch for discovered sensors
+tail -f /data/govee-ble/logs/govee_ble.log
 ```
 
-This scans for 30 seconds and displays:
-- MAC addresses (needed for config)
-- Device names
-- Example configuration JSON
+Look for log entries like:
+```
+Discovered Govee sensor not in allowlist: A4:C1:38:XX:XX:XX (GVH5101_XXXX) - Add to config.json allowlist to monitor
+```
 
 ### 4. Configure
 
@@ -101,21 +105,21 @@ Add discovered MAC addresses to config:
 vi /data/govee-ble/config.json
 ```
 
-Example (from find-sensors.sh output):
+Example configuration:
 
 ```json
 {
   "allowlist": [
-    "A4:C1:38:8E:0D:AF",
-    "A4:C1:38:B8:DF:A1"
+    "A4:C1:38:XX:XX:XX",
+    "A4:C1:38:YY:YY:YY"
   ],
   "names": {
-    "A4:C1:38:8E:0D:AF": "Freezer",
-    "A4:C1:38:B8:DF:A1": "Fridge"
+    "A4:C1:38:XX:XX:XX": "Freezer",
+    "A4:C1:38:YY:YY:YY": "Fridge"
   },
   "temperature_type": {
-    "A4:C1:38:8E:0D:AF": 6,
-    "A4:C1:38:B8:DF:A1": 1
+    "A4:C1:38:XX:XX:XX": 6,
+    "A4:C1:38:YY:YY:YY": 1
   }
 }
 ```
@@ -159,7 +163,7 @@ The service is configured via `/data/govee-ble/config.json`:
   "temperature_type_default": 2,
   "log_level": "INFO",
   "log_path": "/data/govee-ble/logs/govee_ble.log",
-  "stale_threshold_sec": 120,
+  "stale_threshold_sec": 300,
   "restart_min_delay_sec": 30,
   "restart_max_delay_sec": 300,
   "battery": {
@@ -202,10 +206,10 @@ tail -f /data/govee-ble/logs/govee_ble.log
 
 ### Sensors Not Appearing
 
-1. Check allowlist: `cat /data/govee-ble/config.json`
-2. Verify MAC addresses (must be uppercase)
-3. Check sensors are advertising: `btmon -T | grep -i gvh`
-4. Review logs: `tail -n 100 /data/govee-ble/logs/govee_ble.log`
+1. Check logs for discovered sensors: `tail -f /data/govee-ble/logs/govee_ble.log`
+2. Verify MAC addresses in allowlist (must be uppercase): `cat /data/govee-ble/config.json`
+3. Ensure sensors have fresh batteries and are within range (10-30m)
+4. Check service is running: `svstat /service/govee-ble`
 
 ### Service Won't Start
 
@@ -231,7 +235,7 @@ dbus-send --system --print-reply \
 
 # Read a specific value
 dbus-send --system --print-reply \
-  --dest=com.victronenergy.temperature.govee_0daf \
+  --dest=com.victronenergy.temperature.govee_xxxx \
   /Temperature \
   com.victronenergy.BusItem.GetValue
 ```
@@ -258,6 +262,82 @@ govee-ble-venus-py/
 ├── config.example.json            # Example configuration
 └── README.md                      # This file
 ```
+
+## Technical Details: BLE Data Decoding
+
+### How H510x Data Is Decoded
+
+Govee H5101/H5102/H5104 sensors broadcast their readings in Bluetooth Low Energy (BLE) advertisements. The service captures these advertisements using `btmon` and decodes them using the GoveeWatcher algorithm.
+
+#### Data Format
+
+Each advertisement contains 6 bytes of manufacturer data (Company ID: 0x0001):
+
+```
+Byte Position:  [0]   [1]   [2]   [3]   [4]   [5]
+Purpose:        Marker Marker  ----24-bit packed----  Battery
+Example:        0x01  0x01   0x00  0xB8  0xEB    0x49
+```
+
+**Marker Bytes [0-1]:** Always `0x01 0x01` to identify H510x data
+
+**Packed Value [2-4]:** 24-bit combined temperature and humidity value
+
+**Battery [5]:** Direct percentage (0-100)
+
+#### Decoding Algorithm
+
+**Step 1: Combine bytes into 24-bit value**
+```
+packet_value = (byte[2] << 16) | (byte[3] << 8) | byte[4]
+```
+
+**Step 2: Decode temperature**
+```
+if bit 23 is set (value >= 0x800000):
+    # Negative temperature (freezing)
+    clear bit 23: packet_value = packet_value & 0x7FFFFF
+    temperature = -((packet_value / 1000) / 10.0)
+else:
+    # Positive temperature
+    temperature = (packet_value / 1000) / 10.0
+```
+
+**Step 3: Decode humidity**
+```
+# Always clear bit 23 first
+packet_value = packet_value & 0x7FFFFF
+humidity = (packet_value % 1000) / 10.0
+```
+
+#### Real Example
+
+**Raw BLE data:** `01 01 00 B8 EB 49`
+
+**Decoding steps:**
+1. Marker check: `01 01` ✓ Valid H510x data
+2. Combine bytes: `(0x00 << 16) | (0xB8 << 8) | 0xEB = 0x00B8EB = 47339`
+3. Temperature: `(47339 / 1000) / 10.0 = 4.7°C`
+4. Humidity: `(47339 % 1000) / 10.0 = 33.9%`
+5. Battery: `0x49 = 73%`
+
+**Result:** 4.7°C, 33.9% humidity, 73% battery
+
+**Note on Humidity:** The humidity calculation shows ~15-20% lower than the Govee app. This is a known limitation of the current algorithm. Temperature and battery readings are highly accurate.
+
+#### Freezing Temperature Example
+
+**Raw BLE data:** `01 01 82 7A 85 3F`
+
+**Decoding steps:**
+1. Combine bytes: `(0x82 << 16) | (0x7A << 8) | 0x85 = 0x827A85 = 8551045`
+2. Check bit 23: `0x827A85 >= 0x800000` ✓ Negative temperature
+3. Clear sign bit: `0x827A85 & 0x7FFFFF = 0x027A85 = 162437`
+4. Temperature: `-(162437 / 1000) / 10.0 = -16.2°C`
+5. Humidity (with cleared bit): `(162437 % 1000) / 10.0 = 43.7%`
+6. Battery: `0x3F = 63%`
+
+**Result:** -16.2°C, 43.7% humidity, 63% battery
 
 ## Venus OS Environment
 
@@ -289,12 +369,26 @@ Typical resource usage on Cerbo GX:
 To update to a new version:
 
 1. Download new release tarball
-2. Stop service: `svc -d /service/govee-ble`
-3. Extract new files over existing installation
-4. Review changelog for config changes
-5. Start service: `svc -u /service/govee-ble`
+2. Transfer to Venus OS: `scp govee-ble-deploy.tar.gz root@venus.local:/tmp/`
+3. Extract and run installer:
+   ```bash
+   cd /tmp
+   tar xzf govee-ble-deploy.tar.gz
+   cd govee-ble-deploy
+   ./install.sh
+   ```
 
-Configuration files are preserved during updates.
+**Automatic Backup:** The installer automatically backs up your existing installation to `/data/govee-ble.backup.YYYYMMDD_HHMMSS` before installing. The backup directory location is displayed at the end of installation.
+
+**To restore a backup:**
+```bash
+svc -d /service/govee-ble
+rm -rf /data/govee-ble
+mv /data/govee-ble.backup.YYYYMMDD_HHMMSS /data/govee-ble
+svc -u /service/govee-ble
+```
+
+Configuration files are preserved during updates (both in the backup and carried forward to the new installation).
 
 ## Development
 

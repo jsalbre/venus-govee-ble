@@ -1,61 +1,18 @@
 {
-  "_comment": "Govee BLE Venus OS Bridge - Configuration File",
-  "_version": "1.0.0",
-
   "allowlist": [],
-  "_allowlist_help": [
-    "Add MAC addresses of Govee sensors to monitor (uppercase format).",
-    "To find your sensor MAC addresses, run: /data/govee-ble/find-sensors.sh",
-    "Or manually: btmon -T | grep -i gvh",
-    "Example: [\"A4:C1:38:8E:0D:AF\", \"A4:C1:38:B8:DF:A1\"]"
-  ],
-
   "names": {},
-  "_names_help": [
-    "Custom display names for each sensor (optional).",
-    "If not specified, defaults to GVH5101_XXXX (last 4 digits of MAC).",
-    "You can also change names in Venus OS GUI (Settings -> Temperature sensors).",
-    "Example: {\"A4:C1:38:8E:0D:AF\": \"Freezer\", \"A4:C1:38:B8:DF:A1\": \"Fridge\"}"
-  ],
-
   "temperature_type": {},
-  "_temperature_type_help": [
-    "Temperature type override for specific sensors (optional).",
-    "0=Battery, 1=Fridge, 2=Generic, 3=Room, 4=Outdoor, 5=Water heater, 6=Freezer",
-    "You can also change types in Venus OS GUI (Settings -> Temperature sensors).",
-    "Example: {\"A4:C1:38:8E:0D:AF\": 6, \"A4:C1:38:B8:DF:A1\": 1}"
-  ],
-
   "temperature_type_default": 2,
-  "_temperature_type_default_help": "Default type for sensors not in temperature_type map",
-
   "device_instances": {},
-  "_device_instances_help": "Auto-calculated from MAC address, do not edit manually",
-
   "ble_interface": "hci0",
-  "_ble_interface_help": "Bluetooth interface to use (hci0 is typical)",
-
   "log_level": "INFO",
-  "_log_level_help": "Logging level: DEBUG, INFO, WARNING, ERROR",
-
   "log_path": "/data/govee-ble/logs/govee_ble.log",
-  "_log_path_help": "Path to log file (rotates at 10MB, keeps 7 files = 70MB max)",
-
   "update_interval_sec": 1,
-  "_update_interval_sec_help": "How often to process BLE advertisements (seconds)",
-
   "stale_threshold_sec": 120,
-  "_stale_threshold_sec_help": "Mark sensor disconnected after N seconds without update",
-
   "restart_min_delay_sec": 30,
   "restart_max_delay_sec": 300,
-  "_restart_delay_help": "Exponential backoff timing for service restarts after crashes",
-
   "battery": {
     "low_alarm_threshold_pct": 15.0
   },
-  "_battery_help": "Battery alarm threshold (percentage)",
-
-  "parser_version": "local_h510x_v1.0.3_humidity_fix",
-  "_parser_version_help": "Parser version identifier, do not edit"
+  "parser_version": "local_h510x_v1.0.3_humidity_fix"
 }

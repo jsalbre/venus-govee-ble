@@ -134,8 +134,9 @@ if [ ! -s /data/govee-ble/config.json ] || ! grep -q '"allowlist"' /data/govee-b
     echo
     CONFIG_READY=false
 else
-    # Check if allowlist has any entries
-    SENSOR_COUNT=$(grep -A 10 '"allowlist"' /data/govee-ble/config.json | grep -c 'A4:C1:38' || echo 0)
+    # Check if allowlist has any actual entries (look for pattern inside the array)
+    # This checks for quoted strings that look like MAC addresses within the allowlist array
+    SENSOR_COUNT=$(grep -A 20 '"allowlist"' /data/govee-ble/config.json | grep -E '^\s*"[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}:[A-F0-9]{2}"' | wc -l | tr -d ' ')
     if [ "$SENSOR_COUNT" -eq 0 ]; then
         echo_warning "No sensors configured in allowlist!"
         echo

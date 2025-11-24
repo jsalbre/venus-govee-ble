@@ -272,16 +272,25 @@ class GoveeBLEService:
             adv_data: Advertisement data from AdvertisementAssembler
         """
         mac = adv_data.get('mac', '').upper()
+        name = adv_data.get('name', '')
 
         # Check if this sensor is allowlisted
         if mac not in self.services:
+            # Log discovered Govee sensors not in allowlist (once per MAC)
+            if not hasattr(self, '_discovered_sensors'):
+                self._discovered_sensors = set()
+
+            if mac not in self._discovered_sensors and is_govee_device(name, adv_data.get('manufacturer_data', {})):
+                self._discovered_sensors.add(mac)
+                _LOGGER.info(f"Discovered Govee sensor not in allowlist: {mac} ({name}) - "
+                            f"Add to config.json allowlist to monitor")
             return
 
         # Parse the advertisement
         try:
             parsed = parse_advertisement(
                 mac=adv_data.get('mac', mac),  # Use already-validated mac from line 242
-                name=adv_data.get('name'),
+                name=name,
                 rssi=adv_data.get('rssi'),
                 manufacturer_data=adv_data.get('manufacturer_data', {})
             )

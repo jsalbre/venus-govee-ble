@@ -40,19 +40,21 @@ if ! command -v btmon &> /dev/null; then
     exit 1
 fi
 
-# Start scanning
-timeout ${SCAN_DURATION}s btmon -T 2>/dev/null | grep -E '(Address: A4:C1:38|Complete Local Name: GVH)' > "$TEMP_FILE" &
+# Start scanning in background (timeout doesn't exist on BusyBox)
+btmon -T 2>/dev/null | grep -E '(Address: A4:C1:38|Complete Local Name: GVH)' > "$TEMP_FILE" &
 BTMON_PID=$!
 
-# Progress indicator
+# Progress indicator with countdown
 for i in $(seq 1 $SCAN_DURATION); do
     echo -ne "\rScanning... $i/$SCAN_DURATION seconds "
     sleep 1
 done
 echo
 
-# Wait for btmon to finish
+# Kill btmon process
+kill $BTMON_PID 2>/dev/null || true
 wait $BTMON_PID 2>/dev/null || true
+sleep 1
 
 # Parse results
 echo

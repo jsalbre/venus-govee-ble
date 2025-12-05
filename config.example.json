@@ -1,9 +1,6 @@
 {
-  "allowlist": [],
-  "names": {},
-  "temperature_type": {},
+  "sensors": [],
   "temperature_type_default": 2,
-  "device_instances": {},
   "ble_interface": "hci0",
   "log_level": "INFO",
   "log_path": "/data/govee-ble/logs/govee_ble.log",

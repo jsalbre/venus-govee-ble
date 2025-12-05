@@ -162,7 +162,7 @@ echo "  Installation Complete!"
 echo "==========================================="
 echo
 
-if [ ! -s /data/govee-ble/config.json ] || ! grep -q '"allowlist"' /data/govee-ble/config.json; then
+if [ ! -s /data/govee-ble/config.json ] || ! grep -q '"sensors"' /data/govee-ble/config.json; then
     echo_warning "Configuration needed!"
     echo
     echo "Before starting the service, you must:"
@@ -175,16 +175,16 @@ if [ ! -s /data/govee-ble/config.json ] || ! grep -q '"allowlist"' /data/govee-b
     echo
     CONFIG_READY=false
 else
-    # Check if allowlist has any actual entries using Python for accurate JSON parsing
-    SENSOR_COUNT=$(python3 -c "import json; f=open('/data/govee-ble/config.json'); c=json.load(f); print(len(c.get('allowlist', [])))" 2>/dev/null || echo "0")
+    # Check if sensors array has any entries using Python for accurate JSON parsing
+    SENSOR_COUNT=$(python3 -c "import json; f=open('/data/govee-ble/config.json'); c=json.load(f); print(len(c.get('sensors', [])))" 2>/dev/null || echo "0")
     if [ "$SENSOR_COUNT" -eq 0 ]; then
-        echo_warning "No sensors configured in allowlist!"
+        echo_warning "No sensors configured!"
         echo
         echo "The service will log discovered sensors automatically."
         echo "Monitor logs to find sensor MAC addresses:"
         echo "  tail -f /data/govee-ble/logs/govee_ble.log"
         echo
-        echo "Then edit /data/govee-ble/config.json to add them."
+        echo "Then use /data/govee-ble/add-sensor.sh to add them."
         echo
         CONFIG_READY=false
     else
@@ -195,19 +195,19 @@ fi
 
 # Notify if no sensors configured, but start service anyway
 if [ "$CONFIG_READY" != true ]; then
-    echo_warning "No sensors configured in allowlist!"
+    echo_warning "No sensors configured!"
     echo
     echo "The service will start and log any Govee sensors it discovers."
-    echo "To monitor specific sensors, you need to add them to the allowlist."
+    echo "To monitor specific sensors, you need to add them to the sensors array."
     echo
     echo "How to find sensor MAC addresses:"
     echo "  1. Start the service: svc -u /service/govee-ble"
     echo "  2. Monitor logs: tail -f /data/govee-ble/logs/govee_ble.log"
-    echo "  3. Look for: 'Discovered Govee sensor not in allowlist: MAC (name)'"
+    echo "  3. Look for: 'Discovered Govee sensor not in sensors: MAC (name)'"
     echo
     echo "After finding your sensor MAC addresses:"
-    echo "  1. Edit: /data/govee-ble/config.json"
-    echo "  2. Add MAC addresses to the 'allowlist' array"
+    echo "  1. Use add-sensor script: /data/govee-ble/add-sensor.sh MAC [name] [type]"
+    echo "  2. Or edit manually: /data/govee-ble/config.json (sensors array)"
     echo "  3. Restart service: svc -t /service/govee-ble"
     echo
 fi

@@ -5,6 +5,72 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-04
+
+### ⚠️ BREAKING CHANGE
+
+**Configuration File Format Changed**
+
+The config.json structure has been simplified to eliminate MAC address repetition. This is a **breaking change** requiring reconfiguration.
+
+#### Old Format (v1.1.0):
+```json
+{
+  "allowlist": ["A4:C1:38:XX:XX:XX"],
+  "names": {"A4:C1:38:XX:XX:XX": "Freezer"},
+  "temperature_type": {"A4:C1:38:XX:XX:XX": 6},
+  "device_instances": {"A4:C1:38:XX:XX:XX": 450}
+}
+```
+
+#### New Format (v1.2.0):
+```json
+{
+  "sensors": [
+    {
+      "mac": "A4:C1:38:XX:XX:XX",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "device_instance": 450
+    }
+  ]
+}
+```
+
+### Changed
+
+#### Configuration Structure
+- **Sensors Array** - Consolidated `allowlist`, `names`, `temperature_type`, and `device_instances` into single `sensors` array
+- **DRY Principle** - Each MAC address now appears only once instead of 4 times
+- **Clearer Structure** - All sensor properties grouped together in single object
+- **Easier Maintenance** - Add/remove sensors by adding/removing array elements
+
+#### ConfigManager API
+- **Added Methods**: `add_sensor()`, `remove_sensor()`, `get_sensors()`, `update_sensor()`
+- **Updated Methods**: All getter methods now search sensors array
+- **Removed Methods**: `update_allowlist()`, `remove_from_allowlist()`, `get_allowlist()`, `update_device_instances()`
+
+#### Scripts & Tools
+- **add-sensor.sh** - Rewritten to work with sensors array, now updates existing sensors
+- **install.sh** - Updated sensor count detection to use sensors array
+
+#### Service Behavior
+- **Device Instances** - Now persisted per-sensor in config (auto-assigned on first run)
+- **Discovery Logs** - Updated messages to reference "sensors array" instead of "allowlist"
+
+### Migration Notes
+
+**No automatic migration provided.** This release requires fresh configuration:
+
+1. **Backup existing config** - Installer automatically backs up to `/data/govee-ble.backup.YYYYMMDD_HHMMSS`
+2. **Fresh install** - Extract v1.2.0 tarball and run `./install.sh`
+3. **Add sensors** - Use `/data/govee-ble/add-sensor.sh MAC [name] [type]` for each sensor
+4. **Restart service** - `svc -t /service/govee-ble`
+
+Device instances will be automatically calculated and persisted.
+
+---
+
 ## [1.1.0] - 2025-11-24
 
 ### Fixed

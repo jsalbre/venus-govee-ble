@@ -4,7 +4,7 @@ Govee BLE Service - Main Orchestrator.
 
 Main daemon that:
 - Manages btmon reader process
-- Creates D-Bus services for each allowlisted sensor
+- Creates D-Bus services for each configured sensor
 - Routes BLE advertisements to appropriate services
 - Monitors sensor health and connection state
 - Handles errors with exponential backoff
@@ -151,9 +151,11 @@ class GoveeBLEService:
 
     def _calculate_device_instance(self, mac_address: str) -> int:
         """
-        Calculate consistent device instance from MAC address.
+        Get or calculate consistent device instance from MAC address.
 
-        Uses last 4 bytes of MAC modulo 100, offset by 400.
+        First checks if instance already stored in config. If not,
+        calculates using last 4 bytes of MAC modulo 100, offset by 400,
+        and saves it to config.
 
         Args:
             mac_address: MAC address (e.g., "A4:C1:38:8E:0D:AF")
@@ -161,9 +163,22 @@ class GoveeBLEService:
         Returns:
             Device instance (400-499)
         """
-        # Get last 4 hex chars, convert to int, mod 100, offset by 400
+        # Check if already have a device instance in config
+        existing_instance = self.config_manager.get_device_instance(mac_address)
+        if existing_instance is not None:
+            return existing_instance
+
+        # Calculate new instance: last 4 hex chars, convert to int, mod 100, offset by 400
         mac_hex = mac_address.replace(':', '')[-4:]
         instance = 400 + (int(mac_hex, 16) % 100)
+
+        # Save to config for persistence
+        try:
+            self.config_manager.update_sensor(mac_address, device_instance=instance)
+            _LOGGER.debug(f"Saved device instance for {mac_address}: {instance}")
+        except Exception as e:
+            _LOGGER.warning(f"Failed to save device instance for {mac_address}: {e}")
+
         return instance
 
     def _save_custom_name(self, mac_address: str, new_name: str):
@@ -207,17 +222,14 @@ class GoveeBLEService:
             GoveeTemperatureService instance
         """
         # Get custom name from config, or use default
-        device_name = self.config.get('names', {}).get(mac_address)
+        device_name = self.config_manager.get_device_name(mac_address)
         if not device_name:
             # Default: GVH5101_XXXX (last 4 of MAC)
             mac_suffix = mac_address.replace(':', '')[-4:].upper()
             device_name = f"GVH5101_{mac_suffix}"
 
         # Get temperature type from config
-        temp_type = self.config.get('temperature_type', {}).get(
-            mac_address,
-            self.config.get('temperature_type_default', 2)  # Default: generic
-        )
+        temp_type = self.config_manager.get_temperature_type(mac_address)
 
         # Calculate device instance
         device_instance = self._calculate_device_instance(mac_address)
@@ -246,17 +258,21 @@ class GoveeBLEService:
         return service
 
     def _initialize_services(self):
-        """Create D-Bus services for all allowlisted sensors."""
-        allowlist = self.config.get('allowlist', [])
+        """Create D-Bus services for all sensors."""
+        sensors = self.config.get('sensors', [])
 
-        if not allowlist:
-            _LOGGER.warning("Allowlist is empty - no sensors will be monitored")
+        if not sensors:
+            _LOGGER.warning("No sensors configured - no sensors will be monitored")
             return
 
-        _LOGGER.info(f"Initializing services for {len(allowlist)} sensor(s)")
+        _LOGGER.info(f"Initializing services for {len(sensors)} sensor(s)")
 
-        for mac in allowlist:
-            mac = mac.upper()
+        for sensor in sensors:
+            mac = sensor.get('mac', '').upper()
+            if not mac:
+                _LOGGER.warning("Sensor missing MAC address, skipping")
+                continue
+
             if mac not in self.services:
                 try:
                     service = self._create_service_for_sensor(mac)
@@ -274,16 +290,16 @@ class GoveeBLEService:
         mac = adv_data.get('mac', '').upper()
         name = adv_data.get('name', '')
 
-        # Check if this sensor is allowlisted
+        # Check if this sensor is configured
         if mac not in self.services:
-            # Log discovered Govee sensors not in allowlist (once per MAC)
+            # Log discovered Govee sensors not in sensors array (once per MAC)
             if not hasattr(self, '_discovered_sensors'):
                 self._discovered_sensors = set()
 
             if mac not in self._discovered_sensors and is_govee_device(name, adv_data.get('manufacturer_data', {})):
                 self._discovered_sensors.add(mac)
-                _LOGGER.info(f"Discovered Govee sensor not in allowlist: {mac} ({name}) - "
-                            f"Add to config.json allowlist to monitor")
+                _LOGGER.info(f"Discovered Govee sensor not in sensors: {mac} ({name}) - "
+                            f"Add to config.json sensors array to monitor")
             return
 
         # Parse the advertisement

@@ -26,22 +26,19 @@ class ConfigManager:
     """
     
     DEFAULT_CONFIG = {
-        "allowlist": [],
-        "names": {},
-        "device_instances": {},
+        "sensors": [],
         "ble_interface": "hci0",
         "log_level": "INFO",
         "log_path": "/data/govee-ble/logs/govee_ble.log",
         "update_interval_sec": 1,
-        "stale_threshold_sec": 120,
+        "stale_threshold_sec": 300,
         "restart_min_delay_sec": 30,
         "restart_max_delay_sec": 300,
         "battery": {
             "low_alarm_threshold_pct": 15.0
         },
         "temperature_type_default": 2,  # Generic
-        "temperature_type": {},
-        "parser_version": "local_h510x_v1"
+        "parser_version": "local_h510x_v1.0.3_humidity_fix"
     }
     
     def __init__(self, config_path: Path):
@@ -141,76 +138,152 @@ class ConfigManager:
             except:
                 pass
             raise e
-    
-    def update_device_instances(self, updates: Dict[str, int]):
+
+    def _find_sensor(self, mac: str) -> Optional[Dict]:
         """
-        Update device_instances without touching allowlist or names.
-        
+        Find sensor object by MAC address.
+
         Args:
-            updates: Dict of MAC -> device_instance to update
-        """
-        with self._lock():
-            config = self._read_unlocked()
-            
-            # Update device instances
-            for mac, instance in updates.items():
-                mac = mac.upper()
-                config['device_instances'][mac] = instance
-                _LOGGER.debug(f"Updated device instance: {mac} -> {instance}")
-            
-            self._atomic_write(config)
-    
-    def update_allowlist(self, mac: str, name: Optional[str] = None):
-        """
-        Add MAC to allowlist and optionally set friendly name.
-        Idempotent - safe to call multiple times with same MAC.
-        
-        Args:
-            mac: MAC address to add (will be uppercased)
-            name: Optional friendly name
+            mac: MAC address (will be uppercased)
+
+        Returns:
+            Sensor dict or None if not found
         """
         mac = mac.upper()
-        
+        config = self._read_unlocked()
+        sensors = config.get('sensors', [])
+
+        for sensor in sensors:
+            if sensor.get('mac', '').upper() == mac:
+                return sensor
+
+        return None
+
+    def _find_sensor_index(self, mac: str) -> Optional[int]:
+        """
+        Find sensor array index by MAC address.
+
+        Args:
+            mac: MAC address (will be uppercased)
+
+        Returns:
+            Array index or None if not found
+        """
+        mac = mac.upper()
+        config = self._read_unlocked()
+        sensors = config.get('sensors', [])
+
+        for i, sensor in enumerate(sensors):
+            if sensor.get('mac', '').upper() == mac:
+                return i
+
+        return None
+
+    def update_sensor(self, mac: str, **kwargs):
+        """
+        Update sensor properties (name, temperature_type, device_instance).
+
+        Args:
+            mac: MAC address
+            **kwargs: Properties to update (name, temperature_type, device_instance)
+        """
+        mac = mac.upper()
+
         with self._lock():
             config = self._read_unlocked()
-            
-            # Add to allowlist if not present
-            if mac not in config['allowlist']:
-                config['allowlist'].append(mac)
-                _LOGGER.info(f"Added {mac} to allowlist")
-            else:
-                _LOGGER.debug(f"{mac} already in allowlist")
-            
-            # Set name if provided
-            if name:
-                config['names'][mac] = name
-                _LOGGER.info(f"Set name for {mac}: {name}")
-            
+            sensors = config.get('sensors', [])
+
+            # Find sensor
+            sensor_index = None
+            for i, sensor in enumerate(sensors):
+                if sensor.get('mac', '').upper() == mac:
+                    sensor_index = i
+                    break
+
+            if sensor_index is None:
+                _LOGGER.warning(f"Cannot update sensor {mac}: not found in sensors array")
+                return
+
+            # Update properties
+            for key, value in kwargs.items():
+                if key in ['name', 'temperature_type', 'device_instance']:
+                    sensors[sensor_index][key] = value
+                    _LOGGER.debug(f"Updated {mac} {key}: {value}")
+                else:
+                    _LOGGER.warning(f"Unknown sensor property: {key}")
+
+            config['sensors'] = sensors
             self._atomic_write(config)
     
-    def remove_from_allowlist(self, mac: str):
+    def add_sensor(self, mac: str, name: Optional[str] = None, temperature_type: Optional[int] = None):
         """
-        Remove MAC from allowlist (and associated name).
-        
+        Add sensor to sensors array.
+        Idempotent - safe to call multiple times with same MAC (will update existing).
+
+        Args:
+            mac: MAC address (will be uppercased)
+            name: Optional friendly name
+            temperature_type: Optional temperature type (0-6)
+        """
+        mac = mac.upper()
+
+        if temperature_type is not None and not 0 <= temperature_type <= 6:
+            raise ValueError(f"Invalid temperature type: {temperature_type} (must be 0-6)")
+
+        with self._lock():
+            config = self._read_unlocked()
+            sensors = config.get('sensors', [])
+
+            # Check if sensor already exists
+            existing_index = None
+            for i, sensor in enumerate(sensors):
+                if sensor.get('mac', '').upper() == mac:
+                    existing_index = i
+                    break
+
+            if existing_index is not None:
+                # Update existing sensor
+                _LOGGER.debug(f"{mac} already in sensors, updating")
+                if name is not None:
+                    sensors[existing_index]['name'] = name
+                if temperature_type is not None:
+                    sensors[existing_index]['temperature_type'] = temperature_type
+            else:
+                # Add new sensor
+                sensor = {"mac": mac}
+                if name is not None:
+                    sensor['name'] = name
+                if temperature_type is not None:
+                    sensor['temperature_type'] = temperature_type
+
+                sensors.append(sensor)
+                _LOGGER.info(f"Added {mac} to sensors")
+
+            config['sensors'] = sensors
+            self._atomic_write(config)
+    
+    def remove_sensor(self, mac: str):
+        """
+        Remove sensor from sensors array.
+
         Args:
             mac: MAC address to remove
         """
         mac = mac.upper()
-        
+
         with self._lock():
             config = self._read_unlocked()
-            
-            if mac in config['allowlist']:
-                config['allowlist'].remove(mac)
-                _LOGGER.info(f"Removed {mac} from allowlist")
-            
-            if mac in config['names']:
-                del config['names'][mac]
-                _LOGGER.debug(f"Removed name for {mac}")
-            
-            # Note: We keep device_instance for historical tracking
-            
-            self._atomic_write(config)
+            sensors = config.get('sensors', [])
+
+            # Find and remove sensor
+            new_sensors = [s for s in sensors if s.get('mac', '').upper() != mac]
+
+            if len(new_sensors) < len(sensors):
+                _LOGGER.info(f"Removed {mac} from sensors")
+                config['sensors'] = new_sensors
+                self._atomic_write(config)
+            else:
+                _LOGGER.debug(f"{mac} not found in sensors")
     
     def update_custom_name(self, mac: str, name: str):
         """
@@ -224,11 +297,18 @@ class ConfigManager:
 
         with self._lock():
             config = self._read_unlocked()
-            if 'names' not in config:
-                config['names'] = {}
-            config['names'][mac] = name
-            _LOGGER.info(f"Set custom name for {mac}: '{name}'")
-            self._atomic_write(config)
+            sensors = config.get('sensors', [])
+
+            # Find sensor and update name
+            for sensor in sensors:
+                if sensor.get('mac', '').upper() == mac:
+                    sensor['name'] = name
+                    _LOGGER.info(f"Set custom name for {mac}: '{name}'")
+                    config['sensors'] = sensors
+                    self._atomic_write(config)
+                    return
+
+            _LOGGER.warning(f"Cannot set name for {mac}: not found in sensors")
 
     def update_temperature_type(self, mac: str, temp_type: int):
         """
@@ -245,11 +325,18 @@ class ConfigManager:
 
         with self._lock():
             config = self._read_unlocked()
-            if 'temperature_type' not in config:
-                config['temperature_type'] = {}
-            config['temperature_type'][mac] = temp_type
-            _LOGGER.info(f"Set temperature type for {mac}: {temp_type}")
-            self._atomic_write(config)
+            sensors = config.get('sensors', [])
+
+            # Find sensor and update temperature_type
+            for sensor in sensors:
+                if sensor.get('mac', '').upper() == mac:
+                    sensor['temperature_type'] = temp_type
+                    _LOGGER.info(f"Set temperature type for {mac}: {temp_type}")
+                    config['sensors'] = sensors
+                    self._atomic_write(config)
+                    return
+
+            _LOGGER.warning(f"Cannot set temperature type for {mac}: not found in sensors")
 
     def update_parser_version(self, version: str):
         """
@@ -264,70 +351,96 @@ class ConfigManager:
             _LOGGER.info(f"Updated parser version: {version}")
             self._atomic_write(config)
     
-    def get_allowlist(self) -> List[str]:
+    def get_sensors(self) -> List[Dict]:
         """
-        Get current allowlist.
-        
+        Get all sensors.
+
         Returns:
-            List of MAC addresses
+            List of sensor dictionaries
         """
         config = self.read()
-        return config['allowlist']
+        return config.get('sensors', [])
     
     def get_device_name(self, mac: str) -> Optional[str]:
         """
         Get friendly name for device.
-        
+
         Args:
             mac: MAC address
-        
+
         Returns:
             Friendly name or None
         """
         mac = mac.upper()
         config = self.read()
-        return config['names'].get(mac)
+        sensors = config.get('sensors', [])
+
+        for sensor in sensors:
+            if sensor.get('mac', '').upper() == mac:
+                return sensor.get('name')
+
+        return None
     
     def get_device_instance(self, mac: str) -> Optional[int]:
         """
         Get device instance for MAC.
-        
+
         Args:
             mac: MAC address
-        
+
         Returns:
             Device instance or None
         """
         mac = mac.upper()
         config = self.read()
-        return config['device_instances'].get(mac)
+        sensors = config.get('sensors', [])
+
+        for sensor in sensors:
+            if sensor.get('mac', '').upper() == mac:
+                return sensor.get('device_instance')
+
+        return None
     
     def get_temperature_type(self, mac: str) -> int:
         """
         Get temperature type for device (with fallback to default).
-        
+
         Args:
             mac: MAC address
-        
+
         Returns:
             Temperature type (0-6)
         """
         mac = mac.upper()
         config = self.read()
-        return config['temperature_type'].get(mac, config['temperature_type_default'])
+        sensors = config.get('sensors', [])
+        default = config.get('temperature_type_default', 2)
+
+        for sensor in sensors:
+            if sensor.get('mac', '').upper() == mac:
+                return sensor.get('temperature_type', default)
+
+        return default
     
     def is_allowed(self, mac: str) -> bool:
         """
-        Check if MAC is in allowlist.
-        
+        Check if MAC is in sensors array.
+
         Args:
             mac: MAC address
-        
+
         Returns:
-            True if allowed
+            True if sensor exists
         """
         mac = mac.upper()
-        return mac in self.get_allowlist()
+        config = self.read()
+        sensors = config.get('sensors', [])
+
+        for sensor in sensors:
+            if sensor.get('mac', '').upper() == mac:
+                return True
+
+        return False
     
     def export_json(self) -> str:
         """
@@ -343,48 +456,45 @@ class ConfigManager:
 def main():
     """Test config manager."""
     import sys
-    
+
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s.%(msecs)03dZ %(levelname)s [%(name)s] %(message)s',
         datefmt='%Y-%m-%dT%H:%M:%S'
     )
-    
+
     # Use temp directory for testing
     test_config = Path("/tmp/test_govee_config.json")
-    
-    print("Testing ConfigManager...")
+
+    print("Testing ConfigManager v1.2.0 (sensors array)...")
     print(f"Config file: {test_config}\n")
-    
+
     # Clean up old test file
     if test_config.exists():
         test_config.unlink()
-    
+
     manager = ConfigManager(test_config)
     
     # Test 1: Read default config
     print("Test 1: Reading default config...")
     config = manager.read()
-    print(f"  Allowlist: {config['allowlist']}")
-    print(f"  âœ“ Default config loaded\n")
+    print(f"  Sensors: {config['sensors']}")
+    print(f"  OK - Default config loaded\n")
     
-    # Test 2: Add to allowlist
-    print("Test 2: Adding devices to allowlist...")
-    manager.update_allowlist("AA:BB:CC:DD:EE:FF", "Test Sensor 1")
-    manager.update_allowlist("11:22:33:44:55:66", "Test Sensor 2")
-    print(f"  Allowlist: {manager.get_allowlist()}")
-    print(f"  âœ“ Devices added\n")
+    # Test 2: Add sensors
+    print("Test 2: Adding sensors...")
+    manager.add_sensor("AA:BB:CC:DD:EE:FF", "Test Sensor 1")
+    manager.add_sensor("11:22:33:44:55:66", "Test Sensor 2", temperature_type=1)
+    print(f"  Sensors: {manager.get_sensors()}")
+    print(f"  OK - Sensors added\n")
     
-    # Test 3: Update device instances (shouldn't affect allowlist)
-    print("Test 3: Updating device instances...")
-    manager.update_device_instances({
-        "AA:BB:CC:DD:EE:FF": 701,
-        "11:22:33:44:55:66": 702
-    })
+    # Test 3: Update sensor properties
+    print("Test 3: Updating sensor device instances...")
+    manager.update_sensor("AA:BB:CC:DD:EE:FF", device_instance=701)
+    manager.update_sensor("11:22:33:44:55:66", device_instance=702)
     config = manager.read()
-    print(f"  Device instances: {config['device_instances']}")
-    print(f"  Allowlist unchanged: {config['allowlist']}")
-    print(f"  âœ“ Device instances updated without affecting allowlist\n")
+    print(f"  Sensors: {config['sensors']}")
+    print(f"  OK - Device instances updated\n")
     
     # Test 4: Get device info
     print("Test 4: Retrieving device info...")
@@ -407,10 +517,10 @@ def main():
     print(f"  Config JSON:\n{json_str}")
     print(f"  âœ“ Config exported\n")
     
-    # Test 7: Remove from allowlist
-    print("Test 7: Removing device from allowlist...")
-    manager.remove_from_allowlist("11:22:33:44:55:66")
-    print(f"  Allowlist: {manager.get_allowlist()}")
+    # Test 7: Remove sensor
+    print("Test 7: Removing sensor...")
+    manager.remove_sensor("11:22:33:44:55:66")
+    print(f"  Sensors: {manager.get_sensors()}")
     print(f"  Is Allowed (removed): {manager.is_allowed('11:22:33:44:55:66')}")
     print(f"  âœ“ Device removed\n")
     

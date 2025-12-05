@@ -1,6 +1,6 @@
 # Govee BLE Venus OS Bridge
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Status:** Production Ready
 
 Python bridge for integrating Govee H510x Bluetooth temperature/humidity sensors with Victron Energy Venus OS.
@@ -16,7 +16,7 @@ This project enables Victron Cerbo GX devices to monitor Govee H5101/H5102/H5104
 
 ## Features
 
-- **Automatic Discovery** - Detects and monitors allowlisted Govee sensors
+- **Automatic Discovery** - Detects and monitors configured Govee sensors
 - **Real-time Updates** - Temperature, humidity, battery, and RSSI
 - **Native Integration** - Appears as standard Venus OS temperature sensors
 - **Persistent Config** - GUI changes (names, types) saved automatically
@@ -94,7 +94,7 @@ tail -f /data/govee-ble/logs/govee_ble.log
 
 Look for log entries like:
 ```
-Discovered Govee sensor not in allowlist: A4:C1:38:XX:XX:XX (GVH5101_XXXX) - Add to config.json allowlist to monitor
+Discovered Govee sensor not in sensors: A4:C1:38:XX:XX:XX (GVH5101_XXXX) - Add to config.json sensors array to monitor
 ```
 
 ### 4. Configure
@@ -109,19 +109,25 @@ Example configuration:
 
 ```json
 {
-  "allowlist": [
-    "A4:C1:38:XX:XX:XX",
-    "A4:C1:38:YY:YY:YY"
-  ],
-  "names": {
-    "A4:C1:38:XX:XX:XX": "Freezer",
-    "A4:C1:38:YY:YY:YY": "Fridge"
-  },
-  "temperature_type": {
-    "A4:C1:38:XX:XX:XX": 6,
-    "A4:C1:38:YY:YY:YY": 1
-  }
+  "sensors": [
+    {
+      "mac": "A4:C1:38:XX:XX:XX",
+      "name": "Freezer",
+      "temperature_type": 6
+    },
+    {
+      "mac": "A4:C1:38:YY:YY:YY",
+      "name": "Fridge",
+      "temperature_type": 1
+    }
+  ]
 }
+```
+
+Or use the helper script:
+```bash
+/data/govee-ble/add-sensor.sh A4:C1:38:XX:XX:XX Freezer 6
+/data/govee-ble/add-sensor.sh A4:C1:38:YY:YY:YY Fridge 1
 ```
 
 **Temperature Types:** 0=Battery, 1=Fridge, 2=Generic, 3=Room, 4=Outdoor, 5=Water heater, 6=Freezer
@@ -153,13 +159,14 @@ The service is configured via `/data/govee-ble/config.json`:
 
 ```json
 {
-  "allowlist": ["MAC1", "MAC2"],
-  "names": {
-    "MAC1": "Custom Name"
-  },
-  "temperature_type": {
-    "MAC1": 1
-  },
+  "sensors": [
+    {
+      "mac": "A4:C1:38:XX:XX:XX",
+      "name": "Custom Name",
+      "temperature_type": 1,
+      "device_instance": null
+    }
+  ],
   "temperature_type_default": 2,
   "log_level": "INFO",
   "log_path": "/data/govee-ble/logs/govee_ble.log",
@@ -176,12 +183,30 @@ The service is configured via `/data/govee-ble/config.json`:
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `allowlist` | array | MAC addresses to monitor (uppercase) |
-| `names` | object | Custom display names per MAC |
-| `temperature_type` | object | Temperature type override per MAC |
+| `sensors` | array | Array of sensor objects (see below) |
 | `temperature_type_default` | int | Default type for new sensors (0-6) |
 | `log_level` | string | Logging level: DEBUG, INFO, WARNING, ERROR |
 | `stale_threshold_sec` | int | Seconds before sensor marked disconnected |
+
+### Sensor Object Fields
+
+Each sensor in the `sensors` array has:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `mac` | string | Yes | MAC address (uppercase, e.g., "A4:C1:38:XX:XX:XX") |
+| `name` | string | No | Custom display name (defaults to "GVH5101_XXXX") |
+| `temperature_type` | int | No | Type 0-6 (defaults to `temperature_type_default`) |
+| `device_instance` | int/null | No | VRM device instance (auto-assigned if null) |
+
+**Example:**
+```json
+{
+  "mac": "A4:C1:38:XX:XX:XX",
+  "name": "Freezer",
+  "temperature_type": 6
+}
+```
 
 ## Service Management
 
@@ -207,7 +232,7 @@ tail -f /data/govee-ble/logs/govee_ble.log
 ### Sensors Not Appearing
 
 1. Check logs for discovered sensors: `tail -f /data/govee-ble/logs/govee_ble.log`
-2. Verify MAC addresses in allowlist (must be uppercase): `cat /data/govee-ble/config.json`
+2. Verify MAC addresses in sensors array (must be uppercase): `cat /data/govee-ble/config.json`
 3. Ensure sensors have fresh batteries and are within range (10-30m)
 4. Check service is running: `svstat /service/govee-ble`
 

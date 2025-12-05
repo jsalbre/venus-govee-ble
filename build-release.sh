@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 RELEASE_NAME="govee-ble-deploy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build/${RELEASE_NAME}"
@@ -73,7 +73,7 @@ echo "Creating installation instructions..."
 cat > "$BUILD_DIR/INSTALL.txt" << 'EOF'
 =========================================================
 Govee BLE Venus OS Bridge - Installation Instructions
-Version: 1.1.0
+Version: 1.2.0
 =========================================================
 
 QUICK START
@@ -116,17 +116,18 @@ QUICK START
    tail -f /data/govee-ble/logs/govee_ble.log
 
    Look for lines like:
-   "Discovered Govee sensor not in allowlist: A4:C1:38:XX:XX:XX (GVH5101_XXXX)"
+   "Discovered Govee sensor not in sensors: A4:C1:38:XX:XX:XX (GVH5101_XXXX)"
 
    NOTE: Govee H510x sensors do NOT display MAC addresses on
    the device itself or in the Govee mobile app.
 
-6. Edit configuration with your sensor MAC addresses:
+6. Add sensors to configuration:
 
+   Use the add-sensor.sh helper script:
+   /data/govee-ble/add-sensor.sh A4:C1:38:XX:XX:XX "Sensor Name" [type]
+
+   Or edit manually:
    vi /data/govee-ble/config.json
-
-   Add your sensor MAC addresses to the "allowlist" array.
-   You can also use the add-sensor.sh helper script.
 
 7. Start the service (if not already started):
 
@@ -178,7 +179,7 @@ Method 1 (RECOMMENDED): Monitor service logs
    svc -u /service/govee-ble
    tail -f /data/govee-ble/logs/govee_ble.log
 
-   Look for: "Discovered Govee sensor not in allowlist:"
+   Look for: "Discovered Govee sensor not in sensors:"
 
 Method 2: Manual scanning with btmon:
 
@@ -206,7 +207,7 @@ TROUBLESHOOTING
 
 Sensors not appearing?
   1. Check logs for discovered sensors: tail -f /data/govee-ble/logs/govee_ble.log
-  2. Verify MACs are in config.json allowlist
+  2. Verify MACs are in config.json sensors array
   3. Ensure sensors have fresh batteries and are in range
 
 Service won't start?

@@ -84,39 +84,54 @@ try:
     with open(config_file, 'r') as f:
         config = json.load(f)
 
-    # Ensure allowlist exists
-    if 'allowlist' not in config:
-        config['allowlist'] = []
+    # Ensure sensors array exists
+    if 'sensors' not in config:
+        config['sensors'] = []
 
-    # Check if already in allowlist
-    if mac in config['allowlist']:
-        print(f"MAC address already in allowlist")
-        sys.exit(0)
+    # Check if MAC already exists in sensors array
+    existing_sensor = None
+    for sensor in config['sensors']:
+        if sensor.get('mac', '').upper() == mac.upper():
+            existing_sensor = sensor
+            break
 
-    # Add to allowlist
-    config['allowlist'].append(mac)
-    print(f"Added {mac} to allowlist")
+    if existing_sensor:
+        print(f"MAC address already exists in sensors")
+        # Update existing sensor
+        if custom_name:
+            existing_sensor['name'] = custom_name
+            print(f"Updated name: {custom_name}")
+        if temp_type:
+            try:
+                temp_type_int = int(temp_type)
+                if 0 <= temp_type_int <= 6:
+                    existing_sensor['temperature_type'] = temp_type_int
+                    print(f"Updated temperature type: {temp_type}")
+                else:
+                    print(f"Warning: Temperature type must be 0-6, skipping")
+            except ValueError:
+                print(f"Warning: Invalid temperature type, skipping")
+    else:
+        # Create new sensor object
+        sensor = {"mac": mac}
 
-    # Add custom name if provided
-    if custom_name:
-        if 'names' not in config:
-            config['names'] = {}
-        config['names'][mac] = custom_name
-        print(f"Set custom name: {custom_name}")
+        if custom_name:
+            sensor['name'] = custom_name
+            print(f"Set custom name: {custom_name}")
 
-    # Add temperature type if provided
-    if temp_type:
-        if 'temperature_type' not in config:
-            config['temperature_type'] = {}
-        try:
-            temp_type_int = int(temp_type)
-            if 0 <= temp_type_int <= 6:
-                config['temperature_type'][mac] = temp_type_int
-                print(f"Set temperature type: {temp_type}")
-            else:
-                print(f"Warning: Temperature type must be 0-6, skipping")
-        except ValueError:
-            print(f"Warning: Invalid temperature type, skipping")
+        if temp_type:
+            try:
+                temp_type_int = int(temp_type)
+                if 0 <= temp_type_int <= 6:
+                    sensor['temperature_type'] = temp_type_int
+                    print(f"Set temperature type: {temp_type}")
+                else:
+                    print(f"Warning: Temperature type must be 0-6, skipping")
+            except ValueError:
+                print(f"Warning: Invalid temperature type, skipping")
+
+        config['sensors'].append(sensor)
+        print(f"Added {mac} to sensors")
 
     # Write back
     with open(config_file, 'w') as f:

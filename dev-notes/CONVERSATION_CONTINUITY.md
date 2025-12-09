@@ -1,6 +1,6 @@
 # Govee BLE Project - Conversation Continuity Document
-**Last Updated:** 2025-11-24 (v1.1.0 Released - Bug Fixes and Polish)
-**Project Phase:** v1.1.0 PRODUCTION - Stable with Automated Deployment
+**Last Updated:** 2025-12-05 (v1.2.0 Released - Configuration Restructuring)
+**Project Phase:** v1.2.0 PRODUCTION - Deployed and Operational
 
 ---
 
@@ -8,6 +8,103 @@
 
 **All conversation continuity documents MUST be updated throughout development.**  
 This ensures seamless LLM handoffs between conversations. Update this document and related files as work progresses.
+
+---
+
+## Current Status: v1.2.0 PRODUCTION RELEASE (2025-12-05) ✅
+
+### Release v1.2.0 - Configuration Restructuring
+
+**Status:** Deployed to Venus OS, stable and operational
+
+**⚠️ BREAKING CHANGE - Configuration File Format**
+
+The config.json structure has been completely restructured to eliminate MAC address repetition (DRY principle).
+
+**Old Format (v1.1.0):**
+```json
+{
+  "allowlist": ["A4:C1:38:XX:XX:XX"],
+  "names": {"A4:C1:38:XX:XX:XX": "Freezer"},
+  "temperature_type": {"A4:C1:38:XX:XX:XX": 6},
+  "device_instances": {"A4:C1:38:XX:XX:XX": 450}
+}
+```
+
+**New Format (v1.2.0):**
+```json
+{
+  "sensors": [
+    {
+      "mac": "A4:C1:38:XX:XX:XX",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "device_instance": 450
+    }
+  ]
+}
+```
+
+**Benefits:**
+- **DRY Principle** - Each MAC address appears only once instead of 4 times
+- **Clearer Structure** - All sensor properties grouped together
+- **Easier Maintenance** - Add/remove sensors by adding/removing array elements
+- **Auto-persistence** - Device instances automatically saved per sensor
+
+**ConfigManager API Changes:**
+
+**Added Methods:**
+- `add_sensor(mac, name, temperature_type)` - Add sensor to sensors array (idempotent)
+- `remove_sensor(mac)` - Remove sensor from sensors array
+- `get_sensors()` - Get all sensors
+- `update_sensor(mac, **kwargs)` - Update sensor properties
+
+**Updated Methods:**
+- All getter methods now search sensors array instead of separate dicts
+- `get_device_name(mac)` - Searches sensors array
+- `get_device_instance(mac)` - Searches sensors array
+- `get_temperature_type(mac)` - Searches sensors array with fallback to default
+- `is_allowed(mac)` - Checks sensors array
+
+**Removed Methods:**
+- `update_allowlist()` - Replaced by `add_sensor()`
+- `remove_from_allowlist()` - Replaced by `remove_sensor()`
+- `get_allowlist()` - Replaced by `get_sensors()`
+- `update_device_instances()` - Now handled by `update_sensor()`
+
+**Service Behavior Changes:**
+- Device instances now persisted per-sensor in config (auto-assigned on first run)
+- Discovery logs updated to reference "sensors array" instead of "allowlist"
+
+**Migration:**
+- No automatic migration provided
+- Fresh configuration required
+- Installer backs up existing installation to `/data/govee-ble.backup.YYYYMMDD_HHMMSS`
+- Use `/data/govee-ble/add-sensor.sh MAC [name] [type]` for each sensor
+
+**Files Modified:**
+- `src/config_manager.py` - Major refactor with new methods
+- `src/govee_ble_service.py` - Updated to use sensors array
+- `config.example.json` - Changed to sensors array format
+- `add-sensor.sh` - Rewritten to work with sensors array
+- `install.sh` - Updated sensor count detection
+- `README.md` - Updated all config examples and version to 1.2.0
+- `CHANGELOG.md` - Added v1.2.0 section with breaking change notice
+- `build-release.sh` - Updated version to 1.2.0
+- `dev-notes/TODO.md` - Moved config restructuring to completed
+
+**Deployment:**
+- Built: 2025-12-04
+- Released: GitHub v1.2.0 tag created
+- Deployed: 2025-12-05 to venus.local
+- Status: Service running, both sensors operational
+
+**Current Deployment Status:**
+- Service: Running (pid varies)
+- Sensors: Freezer (A4:C1:38:8E:0D:AF), Fridge (A4:C1:38:B8:DF:A1)
+- Device Instances: 403 (Freezer), 449 (Fridge) - auto-persisted
+- Config: Clean v1.2.0 format (old keys removed)
+- Backup: /data/govee-ble.backup.20251205_035953
 
 ---
 
@@ -453,28 +550,35 @@ LE_ADVERTISING_REPORT = re.compile(r'LE Advertising Report')
 
 ---
 
-## Configuration Example (Phase 2)
+## Configuration Example (v1.2.0)
 
 ```json
 {
-  "allowlist": [
-    "A4:C1:38:8E:0D:AF",
-    "A4:C1:38:B8:DF:A1"
+  "sensors": [
+    {
+      "mac": "A4:C1:38:8E:0D:AF",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "device_instance": 403
+    },
+    {
+      "mac": "A4:C1:38:B8:DF:A1",
+      "name": "Fridge",
+      "temperature_type": 1,
+      "device_instance": 449
+    }
   ],
-  "names": {
-    "A4:C1:38:8E:0D:AF": "Freezer",
-    "A4:C1:38:B8:DF:A1": "Fridge"
-  },
-  "temperature_type": {
-    "A4:C1:38:8E:0D:AF": 1,
-    "A4:C1:38:B8:DF:A1": 1
-  },
-  "device_instances": {},
   "ble_interface": "hci0",
   "log_level": "INFO",
-  "stale_threshold_sec": 120,
+  "log_path": "/data/govee-ble/logs/govee_ble.log",
+  "stale_threshold_sec": 300,
   "restart_min_delay_sec": 30,
-  "restart_max_delay_sec": 300
+  "restart_max_delay_sec": 300,
+  "battery": {
+    "low_alarm_threshold_pct": 15.0
+  },
+  "temperature_type_default": 2,
+  "parser_version": "local_h510x_v1.0.3_humidity_fix"
 }
 ```
 
@@ -528,10 +632,10 @@ tail -f /data/govee-ble/logs/govee_ble.log
 
 ## Known Issues and Decisions
 
-### Humidity Discrepancy (Accepted)
-- Humidity readings ~15-20% different from Govee app
-- **Decision:** Proceeding anyway - temperature monitoring is primary requirement
-- May investigate further in future if humidity becomes important
+### Humidity Accuracy (Resolved)
+- ~~Previous concern about ~15-20% discrepancy~~
+- **v1.2.0 Update:** Humidity readings confirmed accurate after validation
+- Both temperature and humidity metrics are reliable
 
 ### btmon Output Format
 - Jeremy's system outputs **HCI Event format**, not MGMT Event format

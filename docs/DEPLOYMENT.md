@@ -1,7 +1,9 @@
 # Govee BLE Service - Deployment Guide
 
 **Target:** Venus OS (Cerbo GX)
-**Version:** Phase 2 - D-Bus Integration
+**Version:** 1.2.0
+
+**Note:** This guide describes manual deployment for development. For production deployment, use the automated installer included in the release tarball. See [README.md](../README.md) for current configuration format (v1.2.0 uses `sensors` array).
 
 ## Prerequisites
 

@@ -3,7 +3,7 @@ Parser adapter for Govee BLE sensors.
 Converts btmon advertisement data to normalized readings.
 
 Currently supports:
-- H5101, H5102, H5104 (H510x family)
+- H5100, H5101, H5102, H5104, H5105 (H510x family)
 
 Future expansion points:
 - Add new model parsers to PARSER_REGISTRY
@@ -16,8 +16,8 @@ import logging
 from typing import Optional, Dict, List
 import re
 
-__version__ = "1.0.3"
-PARSER_VERSION = "local_h510x_v1.0.3_humidity_fix"
+__version__ = "1.1.0"
+PARSER_VERSION = "local_h510x_v1.1.0_h5100_h5105_support"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -222,9 +222,11 @@ def parse_h510x_manufacturer_data(data: bytes) -> Optional[Dict]:
 
 # Parser registry: maps model identifiers to parsing functions
 PARSER_REGISTRY = {
+    'H5100': parse_h510x_manufacturer_data,
     'H5101': parse_h510x_manufacturer_data,
     'H5102': parse_h510x_manufacturer_data,
     'H5104': parse_h510x_manufacturer_data,
+    'H5105': parse_h510x_manufacturer_data,
     # Future models:
     # 'H5075': parse_h5075_manufacturer_data,
     # 'H5074': parse_h5074_manufacturer_data,

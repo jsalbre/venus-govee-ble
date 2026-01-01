@@ -4,26 +4,11 @@
 
 set -e
 
-# Color output
-if [ -t 1 ]; then
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    RED='\033[0;31m'
-    BLUE='\033[0;34m'
-    NC='\033[0m'
-else
-    GREEN=''
-    YELLOW=''
-    RED=''
-    BLUE=''
-    NC=''
-fi
-
 CONFIG_FILE="/data/govee-ble/config.json"
 
 # Check if MAC was provided
 if [ -z "$1" ]; then
-    echo -e "${RED}Error: MAC address required${NC}"
+    echo "Error: MAC address required"
     echo
     echo "Usage: $0 <MAC_ADDRESS> [CUSTOM_NAME] [TEMP_TYPE]"
     echo
@@ -31,6 +16,7 @@ if [ -z "$1" ]; then
     echo "  $0 A4:C1:38:XX:XX:XX"
     echo "  $0 A4:C1:38:XX:XX:XX Freezer 6"
     echo "  $0 A4:C1:38:YY:YY:YY \"Fridge\" 1"
+    echo "  $0 D1:30:38:36:24:0C \"Living Room\" 3"
     echo
     echo "Temperature Types:"
     echo "  0=Battery, 1=Fridge, 2=Generic, 3=Room,"
@@ -44,7 +30,7 @@ TEMP_TYPE="${3:-}"
 
 # Validate MAC format (basic check)
 if ! echo "$MAC" | grep -qE '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$'; then
-    echo -e "${RED}Error: Invalid MAC address format${NC}"
+    echo "Error: Invalid MAC address format"
     echo "Expected format: AA:BB:CC:DD:EE:FF"
     exit 1
 fi
@@ -54,19 +40,19 @@ MAC=$(echo "$MAC" | tr '[:lower:]' '[:upper:]')
 
 # Check if config file exists
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo -e "${RED}Error: Config file not found: $CONFIG_FILE${NC}"
+    echo "Error: Config file not found: $CONFIG_FILE"
     echo "Is the Govee BLE service installed?"
     exit 1
 fi
 
 echo
 echo "========================================"
-echo "  Adding Sensor to Allowlist"
+echo "  Adding Sensor to Config"
 echo "========================================"
 echo
-echo "MAC Address:  ${BLUE}$MAC${NC}"
-[ -n "$CUSTOM_NAME" ] && echo "Custom Name:  ${BLUE}$CUSTOM_NAME${NC}"
-[ -n "$TEMP_TYPE" ] && echo "Temp Type:    ${BLUE}$TEMP_TYPE${NC}"
+echo "MAC Address:  $MAC"
+[ -n "$CUSTOM_NAME" ] && echo "Custom Name:  $CUSTOM_NAME"
+[ -n "$TEMP_TYPE" ] && echo "Temp Type:    $TEMP_TYPE"
 echo
 
 # Use Python to safely manipulate JSON
@@ -161,6 +147,6 @@ if [ $? -eq 0 ]; then
     echo
 else
     echo
-    echo -e "${RED}Failed to add sensor${NC}"
+    echo "Failed to add sensor"
     exit 1
 fi

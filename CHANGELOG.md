@@ -5,6 +5,176 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3] - 2026-01-01
+
+### Fixed
+
+#### Product ID Calculation Bug
+- **Correct Model Number Extraction** - Fixed ProductID calculation error
+  - Bug: Used full model number (5105) instead of last 3 digits (105)
+  - Result: Wrong ProductIDs (0xC3F1, 0xC3ED instead of 0xB105, 0xB101)
+  - Fix: Extract last 3 digits: `model[-3:]` → "H5105" becomes 105
+  - Now: H5100 → 0xB100, H5101 → 0xB101, H5105 → 0xB105 ✓
+
+#### Custom Name Priority
+- **Respect User Custom Names** - Custom names now take priority over BLE names
+  - Bug: BLE name (GVH5105_240C) overrode user's custom name ("Freezer")
+  - Fix: Separate CustomName (user-facing) from model extraction (ProductID)
+  - CustomName priority: 1) Config custom name, 2) BLE name, 3) Fallback
+  - Model extraction: Always from BLE name (for accurate ProductID)
+
+### Technical Details
+
+**Two Separate Concerns:**
+- `device_name` → CustomName field (what user sees: "Freezer", "Living Room")
+- `ble_name` → Model extraction (for ProductID: "GVH5105_240C" → H5105 → 0xB105)
+
+**Product ID Calculation:**
+```python
+# Before (WRONG - v1.3.2):
+model_num = int(model[1:])  # "H5105" → "5105" → 5105 decimal
+return 0xB000 + model_num    # 0xB000 + 5105 = 0xC3F1 ❌
+
+# Still Wrong (v1.3.3 attempt 1):
+model_num = int(model[-3:])  # "H5105" → "105" → 105 decimal
+return 0xB000 + model_num     # 0xB000 + 105 = 0xB069 ❌
+
+# Correct (v1.3.3 final):
+model_num = int(model[-3:], 16)  # "H5105" → "105" → 0x105 = 261 decimal
+return 0xB000 + model_num         # 0xB000 + 261 = 0xB105 ✓
+```
+
+**Result:**
+- H5100 → 0xB100 (45312 decimal)
+- H5101 → 0xB101 (45313 decimal)
+- H5105 → 0xB105 (45317 decimal)
+
+---
+
+## [1.3.2] - 2026-01-01
+
+### Fixed
+
+#### Lazy Service Creation - Correct Model Detection
+- **On-Demand Service Creation** - Services now created when first BLE advertisement is received
+  - Uses real BLE advertisement name (e.g., "GVH5105_240C") instead of generated fallback
+  - Ensures ProductID and ProductName are always correct (H5100 → 0xB100, H5105 → 0xB105, etc.)
+  - **Fixes issue where all sensors showed as "Govee H510x" (0xB510)**
+  - Previously: Services created at startup with hardcoded "GVH5101_XXXX" fallback
+  - Now: Services created when sensor detected with correct model from BLE name
+
+### Changed
+
+#### Service Initialization
+- **Startup Behavior** - Services appear 2-30 seconds after startup (when first advertisement arrives)
+  - Logs configured sensors at startup
+  - Clear messaging: "Waiting for BLE advertisements from N sensor(s)..."
+  - Services register with correct model immediately when created
+  - Matches standard Venus OS BLE device behavior
+
+#### Logging Improvements
+- Added "Creating service for MAC (GVH5105_240C)" messages
+- Shows which sensors are configured vs detected
+- Clear feedback when services are registered
+
+### Technical Details
+
+**Service Creation Flow:**
+1. Startup: Log configured sensor MACs, don't create services
+2. First advertisement: Create service with real BLE name
+3. Extract model from BLE name: "GVH5105_240C" → "H5105"
+4. Set correct ProductID (0xB105) and ProductName ("Govee H5105")
+5. Register on D-Bus with accurate model info
+
+**Benefits:**
+- ✓ Always shows correct model in Venus OS UI
+- ✓ Correct ProductID in VRM Portal from first data point
+- ✓ No model misidentification
+- ✓ Simpler code - one service creation path
+
+**Trade-off:**
+- Services appear when sensor detected (2-30 sec delay) vs immediately at startup
+- This is standard behavior for BLE devices in Venus OS
+
+---
+
+## [1.3.1] - 2026-01-01
+
+### Fixed
+
+#### Model-Specific Product Display
+- **Dynamic Product ID & Name** - Sensors now display with correct model information in Venus OS UI
+  - H5100 sensors show as "Govee H5100" (Product ID: 0xB100)
+  - H5105 sensors show as "Govee H5105" (Product ID: 0xB105)
+  - H5101/02/04 show with correct model names (Product IDs: 0xB101/02/04)
+  - Previously all sensors incorrectly showed as "Govee H5101"
+
+#### Script Output Cleanup
+- **add-sensor.sh** - Removed ANSI color codes that displayed literally on Venus OS
+  - Clean output without escape sequences (`\033[0;34m`, etc.)
+  - Added H5105 example to usage documentation
+  - Better compatibility with BusyBox ash shell
+
+### Changed
+
+#### Service Version
+- Updated `govee_temperature_service.py` version: 2.0.0 → 2.1.0
+- Added model extraction and product ID generation methods
+
+### Technical Details
+
+**Product ID Mapping:**
+- H5100 → 0xB100 (45312 decimal)
+- H5101 → 0xB101 (45313 decimal)
+- H5102 → 0xB102 (45314 decimal)
+- H5104 → 0xB104 (45316 decimal)
+- H5105 → 0xB105 (45317 decimal)
+- Unknown model → 0xB510 (46352 decimal, generic H510x)
+
+**Model Detection:**
+- Extracts model from device name (e.g., "GVH5105_240C" → "H5105")
+- Sets ProductName dynamically (e.g., "Govee H5105")
+- Falls back to "Govee H510x" for unrecognized names
+
+---
+
+## [1.3.0] - 2025-12-31
+
+### Added
+
+#### New Sensor Support
+- **H5100** - Added parser support for H5100 sensors (static random BLE addresses)
+- **H5105** - Added parser support for H5105 sensors (static random BLE addresses)
+
+#### Improved Discovery
+- **Automatic Sensor Discovery** - Service now logs discovered Govee sensors not in configuration
+  - Example: `Discovered Govee sensor not in sensors: D1:30:38:36:24:0C (GVH5105_240C) - Add to config.json sensors array to monitor`
+  - Helps users find new sensors without separate discovery tools
+
+### Changed
+
+#### BLE Address Filtering
+- **Name-Based Filtering** - Replaced OUI-based filtering (A4:C1:38) with Govee name pattern matching (GVH\d+)
+  - Now compatible with both LE_PUBLIC addresses (H5101/02/04) and LE_RANDOM static addresses (H5100/05)
+  - Filters by device name pattern before parsing manufacturer data (improved performance)
+  - Rejects non-Govee devices early, reducing unnecessary processing
+
+#### Parser Version
+- Updated parser version: `local_h510x_v1.1.0_h5100_h5105_support`
+
+### Technical Details
+
+**BLE Address Type Support:**
+- H5100/H5105 use static random BLE addresses (starting with C or D prefixes)
+- H5101/H5102/H5104 use public BLE addresses (Govee OUI A4:C1:38)
+- Both address types now fully supported via name-pattern filtering
+
+**Performance:**
+- Early rejection: Non-Govee devices rejected after name field (before parsing manufacturer data)
+- Only parses 2 lines (Address, Name) before rejecting non-Govee advertisements
+
+---
+
 ## [1.2.0] - 2025-12-04
 
 ### ⚠️ BREAKING CHANGE

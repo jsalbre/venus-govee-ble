@@ -37,6 +37,29 @@ No low priority items at this time.
 
 ## Completed Items
 
+### v1.3.3
+- ✅ Fixed ProductID calculation (parse model suffix as hexadecimal)
+- ✅ Separated CustomName from model extraction
+- ✅ Custom name priority system (config → BLE name → fallback)
+- ✅ Added ble_name parameter to GoveeTemperatureService
+
+### v1.3.2
+- ✅ Lazy service creation (on-demand when first advertisement arrives)
+- ✅ Correct model detection from real BLE names
+- ✅ Updated service initialization flow
+
+### v1.3.1
+- ✅ Dynamic ProductID and ProductName based on model
+- ✅ Model extraction from device name
+- ✅ Removed ANSI color codes from add-sensor.sh
+
+### v1.3.0
+- ✅ H5100 sensor support (static random BLE address)
+- ✅ H5105 sensor support (static random BLE address)
+- ✅ Name-based filtering (replaced OUI-based filtering)
+- ✅ Automatic discovery logging for sensors not in configuration
+- ✅ Updated parser version to v1.1.0
+
 ### v1.2.0
 - ✅ Configuration file restructuring
 - ✅ Consolidated allowlist, names, temperature_type, device_instances into sensors array

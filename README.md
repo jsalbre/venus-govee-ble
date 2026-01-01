@@ -1,13 +1,13 @@
 # Govee BLE Venus OS Bridge
 
-**Version:** 1.2.0
+**Version:** 1.3.3
 **Status:** Production Ready
 
 Python bridge for integrating Govee H510x Bluetooth temperature/humidity sensors with Victron Energy Venus OS.
 
 ## Overview
 
-This project enables Victron Cerbo GX devices to monitor Govee H5101/H5102/H5104 temperature and humidity sensors via Bluetooth Low Energy (BLE). Sensor readings appear natively in Venus OS as `com.victronenergy.temperature` services, making them available in:
+This project enables Victron Cerbo GX devices to monitor Govee H5100/H5101/H5102/H5104/H5105 temperature and humidity sensors via Bluetooth Low Energy (BLE). Sensor readings appear natively in Venus OS as `com.victronenergy.temperature` services, making them available in:
 
 - Remote Console / Local display
 - VRM Portal dashboards
@@ -27,15 +27,17 @@ This project enables Victron Cerbo GX devices to monitor Govee H5101/H5102/H5104
 
 - **Venus OS Device** - Cerbo GX, Venus GX, or compatible
 - **Bluetooth Adapter** - Built-in or USB
-- **Sensors** - Govee H5101, H5102, or H5104
+- **Sensors** - Govee H5100, H5101, H5102, H5104, or H5105
 
 ## Supported Sensors
 
 | Model | Status | Notes |
 |-------|--------|-------|
+| **H5100** | ✓ Compatible | Same protocol as H5101, uses static random BLE address |
 | **H5101** | ✓ Tested | Primary support, refrigerator/freezer monitoring |
 | **H5102** | ✓ Compatible | Same protocol as H5101 |
 | **H5104** | ✓ Compatible | Same protocol as H5101 |
+| **H5105** | ✓ Compatible | Same protocol as H5101, uses static random BLE address |
 | H5075, H5074 | ⚠ Untested | May work, parser not implemented |
 
 ## Sensor Accuracy
@@ -377,7 +379,7 @@ This project is designed for Venus OS's unique environment:
 ## Known Limitations
 
 1. **Humidity Accuracy** - ~15-20% discrepancy vs Govee app (algorithm limitation)
-2. **H5101 Only** - Other models (H5075, H5074) parsers not implemented
+2. **Model Support** - Only H510x family currently supported (H5075, H5074, B5178 parsers not implemented)
 3. **BLE Range** - Limited by Bluetooth adapter and sensor proximity
 
 ## Performance

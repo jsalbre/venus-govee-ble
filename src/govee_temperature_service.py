@@ -9,6 +9,7 @@ import logging
 import time
 import sys
 import os
+import re
 
 # Add velib_python to path
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'ext/velib_python'))
@@ -17,7 +18,7 @@ from vedbus import VeDbusService
 
 _LOGGER = logging.getLogger(__name__)
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 
 class GoveeTemperatureService:
@@ -37,15 +38,16 @@ class GoveeTemperatureService:
     STATUS_OK = 0
     STATUS_DISCONNECTED = 1
 
-    def __init__(self, mac_address: str, device_name: str,
-                 device_instance: int, temperature_type: int = TEMP_TYPE_GENERIC,
+    def __init__(self, mac_address: str, device_name: str, ble_name: str = None,
+                 device_instance: int = 0, temperature_type: int = TEMP_TYPE_GENERIC,
                  dbusconn=None, on_name_change=None, on_type_change=None):
         """
         Initialize Govee temperature service.
 
         Args:
             mac_address: Sensor MAC address (e.g., "A4:C1:38:8E:0D:AF")
-            device_name: Display name (e.g., "Freezer" or "GVH5101_0DAF")
+            device_name: Display name for CustomName (e.g., "Freezer" or "GVH5101_0DAF")
+            ble_name: BLE advertisement name for model extraction (e.g., "GVH5105_240C")
             device_instance: Unique device instance number (0-99)
             temperature_type: 0=battery, 1=fridge, 2=generic
             dbusconn: D-Bus connection (None = auto-detect system/session bus)
@@ -54,6 +56,7 @@ class GoveeTemperatureService:
         """
         self.mac_address = mac_address.upper()
         self.device_name = device_name
+        self.ble_name = ble_name or device_name  # Fallback to device_name if no BLE name
         self.device_instance = device_instance
         self.temperature_type = temperature_type
         self.on_name_change = on_name_change
@@ -99,8 +102,71 @@ class GoveeTemperatureService:
                 self.on_type_change(self.mac_address, value)
         return True  # Accept the change
 
+    def _extract_model(self, device_name: str) -> str:
+        """
+        Extract model from device name.
+
+        Examples:
+            "GVH5105_240C" -> "H5105"
+            "GVH5101_DFA1" -> "H5101"
+            "Custom Name" -> None
+
+        Args:
+            device_name: Device name from BLE advertisement
+
+        Returns:
+            Model string (e.g., "H5105") or None if not extractable
+        """
+        if not device_name:
+            return None
+
+        match = re.match(r'^GVH(\d+)', device_name)
+        if match:
+            return f"H{match.group(1)}"
+        return None
+
+    def _get_product_id(self, model: str) -> int:
+        """
+        Get product ID for model.
+
+        Product ID format: 0xBXXX where XXX is the last 3 digits of model
+        - H5100 -> 0xB100 (45312 decimal)
+        - H5101 -> 0xB101 (45313 decimal)
+        - H5105 -> 0xB105 (45317 decimal)
+        - Unknown -> 0xB510 (46352 decimal, generic H510x family)
+
+        Args:
+            model: Model string (e.g., "H5105")
+
+        Returns:
+            Product ID as integer
+        """
+        if not model or not model.startswith('H'):
+            return 0xB510  # Generic H510x family
+
+        try:
+            # Extract last 3 digits from model and treat as hex digits
+            # "H5105" -> "105" -> 0x105 (261 decimal) -> 0xB000 + 0x105 = 0xB105
+            suffix = model[-3:]
+            model_num = int(suffix, 16)  # Parse as hex: "105" -> 0x105 = 261
+            return 0xB000 + model_num     # H5105 -> 0xB000 + 261 = 0xB105
+        except (ValueError, IndexError):
+            return 0xB510  # Fallback to generic
+
     def _add_paths(self):
         """Add all D-Bus paths for temperature sensor."""
+
+        # Extract model from BLE name (not device_name which may be custom)
+        # device_name = "Freezer" (custom) → model extraction fails
+        # ble_name = "GVH5105_240C" → model = "H5105" ✓
+        model = self._extract_model(self.ble_name)
+        product_id = self._get_product_id(model)
+        product_name = f"Govee {model}" if model else "Govee H510x"
+
+        _LOGGER.debug(
+            f"Setting product info for {self.mac_address}: model={model}, "
+            f"product_id=0x{product_id:04X}, product_name={product_name}"
+        )
 
         # Mandatory paths (per Venus OS spec)
         self._dbusservice.add_mandatory_paths(
@@ -108,8 +174,8 @@ class GoveeTemperatureService:
             processversion=__version__,
             connection='Bluetooth LE',
             deviceinstance=self.device_instance,
-            productid=0xB101,  # Custom: "B" for Bluetooth + "101" for H5101
-            productname='Govee H5101',
+            productid=product_id,      # Dynamic: 0xB100, 0xB101, 0xB105, etc.
+            productname=product_name,  # Dynamic: "Govee H5100", "Govee H5105", etc.
             firmwareversion='1.0.0',
             hardwareversion=None,
             connected=1

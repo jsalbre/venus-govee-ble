@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-VERSION="1.2.0"
+VERSION="1.3.3"
 RELEASE_NAME="govee-ble-deploy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build/${RELEASE_NAME}"
@@ -73,7 +73,7 @@ echo "Creating installation instructions..."
 cat > "$BUILD_DIR/INSTALL.txt" << 'EOF'
 =========================================================
 Govee BLE Venus OS Bridge - Installation Instructions
-Version: 1.2.0
+Version: 1.3.3
 =========================================================
 
 QUICK START
@@ -144,7 +144,7 @@ QUICK START
 WHAT IT DOES
 ------------
 
-This service integrates Govee H5101/H5102/H5104 Bluetooth
+This service integrates Govee H5100/H5101/H5102/H5104/H5105 Bluetooth
 temperature/humidity sensors with Venus OS. Sensors appear as
 native temperature devices in:
 
@@ -157,7 +157,7 @@ REQUIREMENTS
 ------------
 
 - Venus OS v2.80+ (Python 3.12+)
-- Govee H5101, H5102, or H5104 sensors
+- Govee H5100, H5101, H5102, H5104, or H5105 sensors
 - Bluetooth adapter (built-in on most Victron devices)
 - Sensors within Bluetooth range (10-30 meters)
 
@@ -252,7 +252,7 @@ Issues:        https://github.com/jsalbre/govee-ble-venus-py/issues
 
 Include when reporting issues:
 - Venus OS version (cat /opt/victronenergy/version)
-- Sensor model (H5101/H5102/H5104)
+- Sensor model (H5100/H5101/H5102/H5104/H5105)
 - Logs (/data/govee-ble/logs/govee_ble.log)
 
 =========================================================

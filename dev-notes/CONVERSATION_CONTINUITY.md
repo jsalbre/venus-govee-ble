@@ -1,17 +1,111 @@
 # Govee BLE Project - Conversation Continuity Document
-**Last Updated:** 2025-12-05 (v1.2.0 Released - Configuration Restructuring)
-**Project Phase:** v1.2.0 PRODUCTION - Deployed and Operational
+**Last Updated:** 2026-01-01 (v1.3.3 Released - H5100/H5105 Support)
+**Project Phase:** v1.3.3 PRODUCTION - Deployed and Operational
 
 ---
 
 ## CRITICAL: Document Maintenance Requirement
 
-**All conversation continuity documents MUST be updated throughout development.**  
+**All conversation continuity documents MUST be updated throughout development.**
 This ensures seamless LLM handoffs between conversations. Update this document and related files as work progresses.
 
 ---
 
-## Current Status: v1.2.0 PRODUCTION RELEASE (2025-12-05) ✅
+## Current Status: v1.3.3 PRODUCTION RELEASE (2026-01-01) ✅
+
+### Release v1.3.3 - Product ID Fix & Custom Name Priority
+
+**Status:** Deployed to Venus OS, stable and operational
+
+**Critical Fixes:**
+
+1. **Product ID Calculation Bug**
+   - Bug: Used full model number (5105) instead of last 3 digits (105)
+   - Result: Wrong ProductIDs (0xC3F1, 0xB069 instead of 0xB105)
+   - Fix: Parse model suffix as hexadecimal: `int(model[-3:], 16)`
+   - Now: H5100 → 0xB100, H5101 → 0xB101, H5105 → 0xB105 ✓
+
+2. **Custom Name Priority**
+   - Bug: BLE name overrode user's custom names
+   - Fix: Separate CustomName (user-facing) from model extraction (ProductID)
+   - CustomName priority: 1) Config custom name, 2) BLE name, 3) Fallback
+   - Model extraction: Always from BLE name parameter
+
+**Technical Implementation:**
+- `ble_name` parameter added to GoveeTemperatureService for model extraction
+- `device_name` parameter used for CustomName display
+- Product ID calculation: `0xB000 + int(model_suffix, 16)`
+
+**Files Modified:**
+- `src/govee_temperature_service.py` - Fixed ProductID calculation, added ble_name parameter
+- `src/govee_ble_service.py` - Separate custom name from BLE name
+- `CHANGELOG.md` - Updated with v1.3.3 details
+
+---
+
+## Release v1.3.2 - Lazy Service Creation (2026-01-01)
+
+**Status:** Superseded by v1.3.3
+
+**Major Change: On-Demand Service Creation**
+
+Services now created when first BLE advertisement is received (not at startup):
+- **Before:** Services created at startup with hardcoded "GVH5101_XXXX" → wrong ProductID
+- **After:** Services created on first advertisement with real BLE name → correct ProductID
+
+**Benefits:**
+- Always uses real BLE name (GVH5105_240C) for accurate model detection
+- Correct ProductID from first data point
+- Simpler code - one service creation path
+
+**Trade-off:**
+- Services appear 2-30 seconds after startup (when first advertisement arrives)
+- This is standard Venus OS BLE device behavior
+
+**Files Modified:**
+- `src/govee_ble_service.py` - Lazy service creation in _handle_advertisement()
+- `src/govee_temperature_service.py` - Dynamic ProductID/ProductName
+
+---
+
+## Release v1.3.1 - Model-Specific Product Display (2026-01-01)
+
+**Status:** Superseded by v1.3.2 (had ProductID calculation bug)
+
+**Dynamic Product ID & Name:**
+- Added model extraction from device name
+- Dynamic ProductID and ProductName based on model
+- Removed ANSI color codes from add-sensor.sh
+
+**Issue:** ProductID calculation was incorrect (used decimal instead of hex)
+
+---
+
+## Release v1.3.0 - H5100/H5105 Support (2025-12-31)
+
+**Status:** Deployed and operational
+
+**New Sensor Support:**
+- ✅ **H5100** - Same protocol as H5101, uses static random BLE address
+- ✅ **H5105** - Same protocol as H5101, uses static random BLE address
+
+**Name-Based Filtering:**
+- Replaced OUI-based filtering (A4:C1:38) with Govee name pattern matching (GVH\d+)
+- Now compatible with both LE_PUBLIC (H5101/02/04) and LE_RANDOM static (H5100/05) addresses
+- Rejects non-Govee devices after name field (before parsing manufacturer data)
+
+**Improved Discovery:**
+- Automatic sensor discovery logs sensors not in configuration
+- Example: `Discovered Govee sensor not in sensors: D1:30:38:36:24:0C (GVH5105_240C)`
+
+**Files Modified:**
+- `src/parser_adapter.py` - Added H5100, H5105 to PARSER_REGISTRY
+- `src/btmon_reader.py` - Name-based filtering, removed OUI filter
+- `README.md`, `CHANGELOG.md` - Updated for new models
+
+---
+
+## Current Status: v1.2.0 (Superseded by v1.3.3)
 
 ### Release v1.2.0 - Configuration Restructuring
 

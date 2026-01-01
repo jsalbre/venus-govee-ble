@@ -95,6 +95,9 @@ class AdvertisementAssembler:
     NAME_PATTERN = re.compile(r'Name \((complete|short)\): (.+)')
     COMPANY_PATTERN = re.compile(r'Company: .+ \((\d+)\)')
     DATA_PATTERN = re.compile(r'^\s+Data: ([0-9a-f]+)\s*$')
+
+    # Govee device name pattern (GVH5100, GVH5101, GVH5105, etc.)
+    GOVEE_NAME_PATTERN = re.compile(r'^GVH\d+')
     
     def __init__(self, allowlist=None):
         """
@@ -213,22 +216,7 @@ class AdvertisementAssembler:
         match = self.LE_ADDRESS_PATTERN.search(line)
         if match:
             mac = match.group(1).upper()
-
-            # Stage 1: Govee OUI filter (A4:C1:38) - discard non-Govee devices silently
-            if not mac.startswith('A4:C1:38'):
-                self.current_event = None
-                return None
-
-            # Stage 2: Allowlist filter (only for Govee devices)
             self.current_event['mac'] = mac
-            if self.allowlist and mac not in self.allowlist:
-                # Govee device but not in our allowlist - log at debug level
-                _LOGGER.debug(f"Govee device not in allowlist: {mac}")
-                self.current_event = None
-                return None
-
-            # Accepted Govee device - log at debug level
-            _LOGGER.debug(f"Processing Govee device: {mac}")
             return None
         
         # Parse RSSI
@@ -237,10 +225,31 @@ class AdvertisementAssembler:
             self.current_event['rssi'] = int(match.group(1))
             return None
         
-        # Parse Name
+        # Parse Name - IMMEDIATE Govee device check and filtering
         match = self.NAME_PATTERN.search(line)
         if match:
-            self.current_event['name'] = match.group(2).strip()
+            name = match.group(2).strip()
+            self.current_event['name'] = name
+
+            # Reject non-Govee devices immediately (before parsing manufacturer data)
+            if not self.GOVEE_NAME_PATTERN.match(name):
+                _LOGGER.debug(f"Rejecting non-Govee device: {name}")
+                self.current_event = None
+                return None
+
+            # It's a Govee device - check allowlist
+            mac = self.current_event.get('mac')
+            if self.allowlist and mac not in self.allowlist:
+                # Discovered Govee sensor not in sensors array
+                _LOGGER.info(
+                    f"Discovered Govee sensor not in sensors: {mac} ({name}) "
+                    f"- Add to config.json sensors array to monitor"
+                )
+                self.current_event = None
+                return None
+
+            # Accepted Govee sensor - continue parsing
+            _LOGGER.debug(f"Accepted Govee sensor: {mac} ({name})")
             return None
         
         # Parse Company ID
@@ -266,6 +275,9 @@ class AdvertisementAssembler:
         """
         Finalize current event and return if valid.
 
+        Filtering is done during name parsing, so this just validates
+        we have minimum required fields.
+
         Returns:
             Event dict if MAC is present, else None
         """
@@ -276,11 +288,9 @@ class AdvertisementAssembler:
         self.current_event = None
 
         # Must have at least a MAC address
-        if not event['mac']:
+        if not event.get('mac'):
             return None
 
-        # Only Govee devices in allowlist reach this point
-        _LOGGER.debug(f"Finalized advertisement from {event['mac']}")
         return event
 
 

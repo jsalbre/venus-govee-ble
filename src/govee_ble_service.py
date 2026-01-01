@@ -211,22 +211,40 @@ class GoveeBLEService:
         except Exception as e:
             _LOGGER.error(f"Failed to save TemperatureType for {mac_address}: {e}", exc_info=True)
 
-    def _create_service_for_sensor(self, mac_address: str) -> GoveeTemperatureService:
+    def _create_service_for_sensor(self, mac_address: str, ble_name: str = None) -> GoveeTemperatureService:
         """
         Create D-Bus service for a sensor.
 
         Args:
             mac_address: Sensor MAC address
+            ble_name: BLE advertisement name (e.g., "GVH5105_240C"), if available
 
         Returns:
             GoveeTemperatureService instance
         """
-        # Get custom name from config, or use default
-        device_name = self.config_manager.get_device_name(mac_address)
-        if not device_name:
-            # Default: GVH5101_XXXX (last 4 of MAC)
+        # Separate concerns:
+        # - device_name: What user sees (custom name OR BLE name)
+        # - ble_name: For model extraction (ProductID/ProductName)
+
+        # Priority for CustomName (what user sees):
+        # 1. Custom name from config (user preference) - HIGHEST
+        # 2. BLE advertisement name (descriptive)
+        # 3. Generated default (shouldn't happen with lazy creation)
+
+        custom_name = self.config_manager.get_device_name(mac_address)
+        if custom_name:
+            device_name = custom_name
+            _LOGGER.debug(f"Using custom name for {mac_address}: {custom_name}")
+        elif ble_name:
+            device_name = ble_name
+            _LOGGER.debug(f"Using BLE name for {mac_address}: {ble_name}")
+        else:
+            # Fallback (shouldn't happen with lazy creation)
             mac_suffix = mac_address.replace(':', '')[-4:].upper()
             device_name = f"GVH5101_{mac_suffix}"
+            _LOGGER.warning(
+                f"No custom or BLE name for {mac_address}, using fallback: {device_name}"
+            )
 
         # Get temperature type from config
         temp_type = self.config_manager.get_temperature_type(mac_address)
@@ -240,9 +258,11 @@ class GoveeBLEService:
         dbusconn = dbus.SystemBus(private=True)
 
         # Create the service with its own D-Bus connection and config callbacks
+        # Pass ble_name separately for model extraction (ProductID/ProductName)
         service = GoveeTemperatureService(
             mac_address=mac_address,
-            device_name=device_name,
+            device_name=device_name,  # CustomName (user-facing)
+            ble_name=ble_name,         # For model extraction
             device_instance=device_instance,
             temperature_type=temp_type,
             dbusconn=dbusconn,
@@ -258,31 +278,35 @@ class GoveeBLEService:
         return service
 
     def _initialize_services(self):
-        """Create D-Bus services for all sensors."""
+        """
+        Log configured sensors and prepare for lazy service creation.
+
+        Services are now created on-demand when first advertisement is received,
+        ensuring correct model information (H5100/H5105 etc.) from the BLE name.
+        """
         sensors = self.config.get('sensors', [])
 
         if not sensors:
             _LOGGER.warning("No sensors configured - no sensors will be monitored")
+            _LOGGER.info("Add sensors to config.json or use: /data/govee-ble/add-sensor.sh")
             return
 
-        _LOGGER.info(f"Initializing services for {len(sensors)} sensor(s)")
+        sensor_macs = [s.get('mac', '').upper() for s in sensors if s.get('mac')]
 
-        for sensor in sensors:
-            mac = sensor.get('mac', '').upper()
-            if not mac:
-                _LOGGER.warning("Sensor missing MAC address, skipping")
-                continue
+        _LOGGER.info(f"Configured sensors: {len(sensor_macs)}")
+        for mac in sensor_macs:
+            _LOGGER.info(f"  - {mac}")
 
-            if mac not in self.services:
-                try:
-                    service = self._create_service_for_sensor(mac)
-                    self.services[mac] = service
-                except Exception as e:
-                    _LOGGER.error(f"Failed to create service for {mac}: {e}", exc_info=True)
+        _LOGGER.info(
+            f"Waiting for BLE advertisements from {len(sensor_macs)} sensor(s)... "
+            f"(services will be created when first advertisement is received)"
+        )
 
     def _handle_advertisement(self, adv_data: dict):
         """
         Process a BLE advertisement.
+
+        Creates services on-demand when first advertisement is received.
 
         Args:
             adv_data: Advertisement data from AdvertisementAssembler
@@ -291,16 +315,29 @@ class GoveeBLEService:
         name = adv_data.get('name', '')
 
         # Check if this sensor is configured
-        if mac not in self.services:
-            # Log discovered Govee sensors not in sensors array (once per MAC)
-            if not hasattr(self, '_discovered_sensors'):
-                self._discovered_sensors = set()
+        configured_macs = [s['mac'].upper() for s in self.config.get('sensors', [])]
 
-            if mac not in self._discovered_sensors and is_govee_device(name, adv_data.get('manufacturer_data', {})):
-                self._discovered_sensors.add(mac)
-                _LOGGER.info(f"Discovered Govee sensor not in sensors: {mac} ({name}) - "
-                            f"Add to config.json sensors array to monitor")
-            return
+        if mac not in self.services:
+            # Check if this MAC is in our configuration
+            if mac in configured_macs:
+                # Configured sensor - create service on-demand with real BLE name
+                try:
+                    _LOGGER.info(f"Creating service for {mac} ({name})")
+                    self.services[mac] = self._create_service_for_sensor(mac, ble_name=name)
+                    _LOGGER.info(f"Service created successfully for {mac}")
+                except Exception as e:
+                    _LOGGER.error(f"Failed to create service for {mac}: {e}", exc_info=True)
+                    return
+            else:
+                # Not configured - log as discovered (once per MAC)
+                if not hasattr(self, '_discovered_sensors'):
+                    self._discovered_sensors = set()
+
+                if mac not in self._discovered_sensors and is_govee_device(name, adv_data.get('manufacturer_data', {})):
+                    self._discovered_sensors.add(mac)
+                    _LOGGER.info(f"Discovered Govee sensor not in sensors: {mac} ({name}) - "
+                                f"Add to config.json sensors array to monitor")
+                return
 
         # Parse the advertisement
         try:

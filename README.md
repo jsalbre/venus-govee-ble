@@ -1,6 +1,6 @@
 # Govee BLE Venus OS Bridge
 
-**Version:** 1.3.3
+**Version:** 1.4.0
 **Status:** Production Ready
 
 Python bridge for integrating Govee H510x Bluetooth temperature/humidity sensors with Victron Energy Venus OS.
@@ -115,12 +115,14 @@ Example configuration:
     {
       "mac": "A4:C1:38:XX:XX:XX",
       "name": "Freezer",
-      "temperature_type": 6
+      "temperature_type": 6,
+      "humidity_enabled": true
     },
     {
       "mac": "A4:C1:38:YY:YY:YY",
       "name": "Fridge",
-      "temperature_type": 1
+      "temperature_type": 1,
+      "humidity_enabled": false
     }
   ]
 }
@@ -153,6 +155,7 @@ Verify in Venus OS GUI:
 
 - **[Installation Guide](docs/INSTALL.md)** - Detailed installation steps
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Advanced deployment options
+- **[Venus OS Constraints](docs/VENUS_OS_CONSTRAINTS.md)** - Platform limitations and technical constraints
 - **[Configuration](#configuration)** - Configuration file reference
 
 ## Configuration
@@ -166,7 +169,8 @@ The service is configured via `/data/govee-ble/config.json`:
       "mac": "A4:C1:38:XX:XX:XX",
       "name": "Custom Name",
       "temperature_type": 1,
-      "device_instance": null
+      "device_instance": null,
+      "humidity_enabled": true
     }
   ],
   "temperature_type_default": 2,
@@ -200,13 +204,15 @@ Each sensor in the `sensors` array has:
 | `name` | string | No | Custom display name (defaults to "GVH5101_XXXX") |
 | `temperature_type` | int | No | Type 0-6 (defaults to `temperature_type_default`) |
 | `device_instance` | int/null | No | VRM device instance (auto-assigned if null) |
+| `humidity_enabled` | bool | No | Show humidity readings (defaults to `true`). Config-file only, requires service restart to apply. |
 
 **Example:**
 ```json
 {
   "mac": "A4:C1:38:XX:XX:XX",
   "name": "Freezer",
-  "temperature_type": 6
+  "temperature_type": 6,
+  "humidity_enabled": true
 }
 ```
 

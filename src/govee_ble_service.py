@@ -249,6 +249,9 @@ class GoveeBLEService:
         # Get temperature type from config
         temp_type = self.config_manager.get_temperature_type(mac_address)
 
+        # Get humidity enabled flag from config
+        humidity_enabled = self.config_manager.get_humidity_enabled(mac_address)
+
         # Calculate device instance
         device_instance = self._calculate_device_instance(mac_address)
 
@@ -265,6 +268,7 @@ class GoveeBLEService:
             ble_name=ble_name,         # For model extraction
             device_instance=device_instance,
             temperature_type=temp_type,
+            humidity_enabled=humidity_enabled,
             dbusconn=dbusconn,
             on_name_change=self._save_custom_name,
             on_type_change=self._save_temperature_type

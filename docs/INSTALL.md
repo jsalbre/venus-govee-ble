@@ -1,10 +1,10 @@
 # Installation Guide
 
-**Version:** 1.3.3
+**Version:** 1.4.0
 
 This guide covers installing the Govee BLE Venus OS Bridge on your Victron device.
 
-**Note:** v1.2.0+ uses a `sensors` array configuration format. v1.3.0+ adds support for H5100 and H5105 sensors. See [README.md](../README.md) for current config examples and the [CHANGELOG](../CHANGELOG.md) for version details.
+**Note:** v1.2.0+ uses a `sensors` array configuration format. v1.3.0+ adds support for H5100 and H5105 sensors. v1.4.0+ adds humidity control and DeviceName path. See [README.md](../README.md) for current config examples and the [CHANGELOG](../CHANGELOG.md) for version details.
 
 ## Quick Installation
 

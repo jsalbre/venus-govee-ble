@@ -5,6 +5,75 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-01-05
+
+### Added
+
+#### DeviceName D-Bus Path
+- **New Read-Only Path** - Added `/DeviceName` D-Bus path
+  - Contains BLE advertisement name (e.g., "GVH5105_240C")
+  - Separate from `/CustomName` which is user-writable
+  - Useful for identifying actual device model and MAC suffix
+
+#### Per-Sensor Humidity Control
+- **Toggle Humidity Display** - Added ability to disable/enable humidity readings per sensor
+  - New config field: `humidity_enabled` (boolean, defaults to true)
+  - Control via config file only (Venus OS GUI does not display custom paths)
+  - When disabled: `/Humidity` path not created on service startup
+  - When enabled: `/Humidity` path created and populated with readings
+  - Requires service restart to apply changes
+  - Humidity still parsed from BLE (always available in logs)
+
+#### Dynamic Firmware Version
+- **Track Service Version** - Firmware version now matches service version
+  - Changed from hardcoded '1.0.0' to dynamic `__version__`
+  - Currently shows "2.1.0" matching service version
+  - Automatically updates with service releases
+
+### Technical Implementation
+
+#### Config Manager (src/config_manager.py)
+- Added `get_humidity_enabled(mac)` method - returns bool, defaults to True
+- Added `update_humidity_enabled(mac, enabled)` method - persists changes
+- Updated `update_sensor()` to accept 'humidity_enabled' field
+
+#### Temperature Service (src/govee_temperature_service.py)
+- Added `humidity_enabled` parameter to constructor
+- Conditional `/Humidity` path creation based on config at startup
+- Safe path checks before humidity updates in `update()` method
+- Config-file-only control (no D-Bus writeable path)
+
+#### Main Service (src/govee_ble_service.py)
+- Reads `humidity_enabled` from config during service creation
+- Passes humidity state to temperature service constructor
+
+### Configuration Example
+
+```json
+{
+  "sensors": [
+    {
+      "mac": "A4:C1:38:XX:XX:XX",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "humidity_enabled": false
+    }
+  ]
+}
+```
+
+### D-Bus Paths Added
+
+- `/DeviceName` - BLE advertisement name (read-only)
+
+### Backward Compatibility
+
+- Existing configs without `humidity_enabled` default to `true`
+- All sensors show humidity by default (same as v1.3.3)
+- New paths are additions only (no breaking changes)
+
+---
+
 ## [1.3.3] - 2026-01-01
 
 ### Fixed

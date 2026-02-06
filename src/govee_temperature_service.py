@@ -40,6 +40,7 @@ class GoveeTemperatureService:
 
     def __init__(self, mac_address: str, device_name: str, ble_name: str = None,
                  device_instance: int = 0, temperature_type: int = TEMP_TYPE_GENERIC,
+                 humidity_enabled: bool = True,
                  dbusconn=None, on_name_change=None, on_type_change=None):
         """
         Initialize Govee temperature service.
@@ -50,6 +51,7 @@ class GoveeTemperatureService:
             ble_name: BLE advertisement name for model extraction (e.g., "GVH5105_240C")
             device_instance: Unique device instance number (0-99)
             temperature_type: 0=battery, 1=fridge, 2=generic
+            humidity_enabled: Whether to expose /Humidity D-Bus path (default: True, config-file only)
             dbusconn: D-Bus connection (None = auto-detect system/session bus)
             on_name_change: Callback function(mac, new_name) when CustomName changes
             on_type_change: Callback function(mac, new_type) when TemperatureType changes
@@ -59,6 +61,7 @@ class GoveeTemperatureService:
         self.ble_name = ble_name or device_name  # Fallback to device_name if no BLE name
         self.device_instance = device_instance
         self.temperature_type = temperature_type
+        self.humidity_enabled = humidity_enabled
         self.on_name_change = on_name_change
         self.on_type_change = on_type_change
 
@@ -176,14 +179,18 @@ class GoveeTemperatureService:
             deviceinstance=self.device_instance,
             productid=product_id,      # Dynamic: 0xB100, 0xB101, 0xB105, etc.
             productname=product_name,  # Dynamic: "Govee H5100", "Govee H5105", etc.
-            firmwareversion='1.0.0',
+            firmwareversion=__version__,
             hardwareversion=None,
             connected=1
         )
 
         # Temperature sensor specific paths
         self._dbusservice.add_path('/Temperature', value=None, description='Temperature in Celsius')
-        self._dbusservice.add_path('/Humidity', value=None, description='Relative humidity in percent')
+
+        # Humidity path - conditionally added based on humidity_enabled flag (config-file only)
+        if self.humidity_enabled:
+            self._dbusservice.add_path('/Humidity', value=None, description='Relative humidity in percent')
+
         self._dbusservice.add_path('/Status', value=self.STATUS_OK, description='Status: 0=Ok, 1=Disconnected')
         self._dbusservice.add_path('/TemperatureType', value=self.temperature_type, writeable=True,
                                    onchangecallback=self._handle_type_change,
@@ -197,6 +204,7 @@ class GoveeTemperatureService:
         self._dbusservice.add_path('/RSSI', value=None, description='Bluetooth signal strength (dBm)')
         self._dbusservice.add_path('/Mgmt/LastUpdate', value=0, description='Unix timestamp of last update')
         self._dbusservice.add_path('/Mgmt/MAC', value=self.mac_address, description='Sensor MAC address')
+        self._dbusservice.add_path('/DeviceName', value=self.ble_name, description='BLE advertisement device name')
 
     def update(self, temperature: float, humidity: float, battery: int, rssi: int):
         """
@@ -212,7 +220,11 @@ class GoveeTemperatureService:
 
         # Update all sensor values (D-Bus accepts None for invalid/unavailable values)
         self._dbusservice['/Temperature'] = round(temperature, 2) if temperature is not None else None
-        self._dbusservice['/Humidity'] = round(humidity, 2) if humidity is not None else None
+
+        # Only update /Humidity if it exists (path may be dynamically removed)
+        if '/Humidity' in self._dbusservice:
+            self._dbusservice['/Humidity'] = round(humidity, 2) if humidity is not None else None
+
         self._dbusservice['/Battery'] = battery
         self._dbusservice['/RSSI'] = rssi
         self._dbusservice['/Mgmt/LastUpdate'] = int(now)

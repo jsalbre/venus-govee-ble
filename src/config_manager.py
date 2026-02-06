@@ -206,7 +206,7 @@ class ConfigManager:
 
             # Update properties
             for key, value in kwargs.items():
-                if key in ['name', 'temperature_type', 'device_instance']:
+                if key in ['name', 'temperature_type', 'device_instance', 'humidity_enabled']:
                     sensors[sensor_index][key] = value
                     _LOGGER.debug(f"Updated {mac} {key}: {value}")
                 else:
@@ -421,7 +421,52 @@ class ConfigManager:
                 return sensor.get('temperature_type', default)
 
         return default
-    
+
+    def get_humidity_enabled(self, mac: str) -> bool:
+        """
+        Get humidity enabled flag for device (with fallback to True).
+
+        Args:
+            mac: MAC address
+
+        Returns:
+            True if humidity should be enabled (default: True for backward compatibility)
+        """
+        mac = mac.upper()
+        config = self.read()
+        sensors = config.get('sensors', [])
+
+        for sensor in sensors:
+            if sensor.get('mac', '').upper() == mac:
+                return sensor.get('humidity_enabled', True)
+
+        return True
+
+    def update_humidity_enabled(self, mac: str, enabled: bool):
+        """
+        Set humidity enabled flag for a device and persist to config.
+
+        Args:
+            mac: MAC address
+            enabled: True to enable humidity readings, False to disable
+        """
+        mac = mac.upper()
+
+        with self._lock():
+            config = self._read_unlocked()
+            sensors = config.get('sensors', [])
+
+            # Find sensor and update humidity_enabled
+            for sensor in sensors:
+                if sensor.get('mac', '').upper() == mac:
+                    sensor['humidity_enabled'] = enabled
+                    _LOGGER.info(f"Set humidity_enabled for {mac}: {enabled}")
+                    config['sensors'] = sensors
+                    self._atomic_write(config)
+                    return
+
+            _LOGGER.warning(f"Cannot set humidity_enabled for {mac}: not found in sensors")
+
     def is_allowed(self, mac: str) -> bool:
         """
         Check if MAC is in sensors array.

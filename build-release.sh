@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-VERSION="1.3.3"
+VERSION="1.4.0"
 RELEASE_NAME="govee-ble-deploy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build/${RELEASE_NAME}"

@@ -1,5 +1,18 @@
 {
-  "sensors": [],
+  "sensors": [
+    {
+      "mac": "A4:C1:38:XX:XX:XX",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "humidity_enabled": true
+    },
+    {
+      "mac": "A4:C1:38:YY:YY:YY",
+      "name": "Fridge",
+      "temperature_type": 1,
+      "humidity_enabled": false
+    }
+  ],
   "temperature_type_default": 2,
   "ble_interface": "hci0",
   "log_level": "INFO",

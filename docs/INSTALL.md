@@ -64,7 +64,7 @@ svc -u /service/govee-ble
 tail -f /data/govee-ble/logs/govee_ble.log
 
 # Look for lines like:
-# Discovered Govee sensor not in allowlist: A4:C1:38:XX:XX:XX (GVH5101_XXXX)
+# Discovered Govee sensor not in sensors: A4:C1:38:XX:XX:XX (GVH5101_XXXX)
 ```
 
 **Method B: Manual btmon Scanning**
@@ -120,18 +120,20 @@ Update with your sensor MAC addresses:
 
 ```json
 {
-  "allowlist": [
-    "A4:C1:38:8E:0D:AF",
-    "A4:C1:38:B8:DF:A1"
+  "sensors": [
+    {
+      "mac": "A4:C1:38:8E:0D:AF",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "humidity_enabled": true
+    },
+    {
+      "mac": "A4:C1:38:B8:DF:A1",
+      "name": "Fridge",
+      "temperature_type": 1,
+      "humidity_enabled": false
+    }
   ],
-  "names": {
-    "A4:C1:38:8E:0D:AF": "Freezer",
-    "A4:C1:38:B8:DF:A1": "Fridge"
-  ],
-  "temperature_type": {
-    "A4:C1:38:8E:0D:AF": 6,
-    "A4:C1:38:B8:DF:A1": 1
-  },
   "temperature_type_default": 2,
   "log_level": "INFO"
 }
@@ -140,7 +142,7 @@ Update with your sensor MAC addresses:
 **Important:**
 - MAC addresses must be **uppercase**
 - Match the format exactly: `A4:C1:38:XX:XX:XX`
-- Add all sensors you want to monitor to the `allowlist`
+- Add all sensors you want to monitor to the `sensors` array
 
 **Temperature Types:**
 | Value | Type | Best For |
@@ -267,9 +269,9 @@ Configure temperature alarms in Venus OS:
 
 ### Sensors Not Appearing
 
-**Check 1: Verify sensors are in allowlist**
+**Check 1: Verify sensors are in config**
 ```bash
-cat /data/govee-ble/config.json | grep -A 5 allowlist
+cat /data/govee-ble/config.json | grep -A 5 sensors
 ```
 
 **Check 2: Verify sensors are advertising**
@@ -423,7 +425,7 @@ Change how long before a sensor is marked as disconnected:
 }
 ```
 
-Default is 120 seconds (2 minutes). Increase if sensors are intermittently marked disconnected.
+Default is 300 seconds (5 minutes). Increase if sensors are intermittently marked disconnected.
 
 ### Modify Restart Backoff
 

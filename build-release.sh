@@ -73,7 +73,7 @@ echo "Creating installation instructions..."
 cat > "$BUILD_DIR/INSTALL.txt" << 'EOF'
 =========================================================
 Govee BLE Venus OS Bridge - Installation Instructions
-Version: 1.3.3
+Version: 1.4.0
 =========================================================
 
 QUICK START

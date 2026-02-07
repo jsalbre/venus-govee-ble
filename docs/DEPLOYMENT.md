@@ -59,18 +59,20 @@ Update the configuration with your sensor MAC addresses and names:
 
 ```json
 {
-  "allowlist": [
-    "A4:C1:38:8E:0D:AF",
-    "A4:C1:38:B8:DF:A1"
-  ],
-  "names": {
-    "A4:C1:38:8E:0D:AF": "Freezer",
-    "A4:C1:38:B8:DF:A1": "Fridge"
-  },
-  "temperature_type": {
-    "A4:C1:38:8E:0D:AF": 1,
-    "A4:C1:38:B8:DF:A1": 1
-  }
+  "sensors": [
+    {
+      "mac": "A4:C1:38:8E:0D:AF",
+      "name": "Freezer",
+      "temperature_type": 6,
+      "humidity_enabled": true
+    },
+    {
+      "mac": "A4:C1:38:B8:DF:A1",
+      "name": "Fridge",
+      "temperature_type": 1,
+      "humidity_enabled": false
+    }
+  ]
 }
 ```
 
@@ -187,7 +189,7 @@ python3 -c "import sys; sys.path.insert(1, '/data/govee-ble/ext/velib_python'); 
 
 ### Sensors Not Appearing
 
-1. Verify sensors are in allowlist: `cat /data/govee-ble/config.json`
+1. Verify sensors are in config: `cat /data/govee-ble/config.json`
 2. Check MAC addresses are correct (uppercase)
 3. Verify sensors are advertising: `btmon -T | grep -i gvh`
 4. Check logs for errors

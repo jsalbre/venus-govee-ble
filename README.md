@@ -151,13 +151,6 @@ Verify in Venus OS GUI:
 - **Device list** - Shows live readings
 - **VRM Portal** - Historical data (after 15 minutes)
 
-## Documentation
-
-- **[Installation Guide](docs/INSTALL.md)** - Detailed installation steps
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Advanced deployment options
-- **[Venus OS Constraints](docs/VENUS_OS_CONSTRAINTS.md)** - Platform limitations and technical constraints
-- **[Configuration](#configuration)** - Configuration file reference
-
 ## Configuration
 
 The service is configured via `/data/govee-ble/config.json`:
@@ -288,11 +281,10 @@ govee-ble-venus-py/
 │   └── govee-ble/run              # Service startup script
 ├── ext/                           # Dependencies
 │   └── velib_python/              # Victron Venus library
-├── docs/                          # User documentation
-│   ├── INSTALL.md
-│   └── DEPLOYMENT.md
-├── dev-notes/                     # Development notes (not in releases)
 ├── config.example.json            # Example configuration
+├── install.sh                     # Installation script
+├── add-sensor.sh                  # Sensor configuration helper
+├── build-release.sh               # Release packaging script
 └── README.md                      # This file
 ```
 
@@ -423,13 +415,22 @@ svc -u /service/govee-ble
 
 Configuration files are preserved during updates (both in the backup and carried forward to the new installation).
 
+## Uninstalling
+
+To completely remove the service:
+
+```bash
+# Stop and remove service
+svc -d /service/govee-ble
+rm -rf /service/govee-ble
+
+# Remove application files
+rm -rf /data/govee-ble
+```
+
 ## Development
 
-For developers interested in contributing or extending this project:
-
-- Development notes: `dev-notes/`
-- Venus OS constraints: `dev-notes/ENVIRONMENT_NOTES.md`
-- Test samples: `samples/`
+For developers interested in contributing or extending this project, see `dev-notes/` (not included in releases).
 
 ## License
 

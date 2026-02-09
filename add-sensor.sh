@@ -55,6 +55,16 @@ echo "MAC Address:  $MAC"
 [ -n "$TEMP_TYPE" ] && echo "Temp Type:    $TEMP_TYPE"
 echo
 
+printf "Display humidity for this sensor? (Y/n): "
+read HUMIDITY_CHOICE
+case "$HUMIDITY_CHOICE" in
+    [nN]) HUMIDITY_ENABLED="false" ;;
+    *)    HUMIDITY_ENABLED="true" ;;
+esac
+
+echo "Humidity:     $HUMIDITY_ENABLED"
+echo
+
 # Use Python to safely manipulate JSON
 python3 << PYTHON_EOF
 import json
@@ -64,6 +74,7 @@ config_file = "$CONFIG_FILE"
 mac = "$MAC"
 custom_name = "$CUSTOM_NAME"
 temp_type = "$TEMP_TYPE"
+humidity_enabled = "$HUMIDITY_ENABLED" == "true"
 
 try:
     # Read config
@@ -84,6 +95,7 @@ try:
     if existing_sensor:
         print(f"MAC address already exists in sensors")
         # Update existing sensor
+        existing_sensor['humidity_enabled'] = humidity_enabled
         if custom_name:
             existing_sensor['name'] = custom_name
             print(f"Updated name: {custom_name}")
@@ -99,7 +111,7 @@ try:
                 print(f"Warning: Invalid temperature type, skipping")
     else:
         # Create new sensor object
-        sensor = {"mac": mac}
+        sensor = {"mac": mac, "humidity_enabled": humidity_enabled}
 
         if custom_name:
             sensor['name'] = custom_name
@@ -136,8 +148,19 @@ if [ $? -eq 0 ]; then
     echo "  Sensor Added Successfully!"
     echo "========================================"
     echo
-    echo "Restart the service to activate:"
-    echo "  svc -t /service/govee-ble"
+    printf "Restart service now to activate? (Y/n): "
+    read RESTART_CHOICE
+    case "$RESTART_CHOICE" in
+        [nN])
+            echo
+            echo "Restart the service manually to activate:"
+            echo "  svc -t /service/govee-ble"
+            ;;
+        *)
+            svc -t /service/govee-ble
+            echo "Service restarted."
+            ;;
+    esac
     echo
     echo "View current config:"
     echo "  cat $CONFIG_FILE"

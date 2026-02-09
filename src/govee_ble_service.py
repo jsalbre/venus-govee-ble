@@ -12,6 +12,7 @@ Main daemon that:
 
 import sys
 import os
+import json
 import logging
 import signal
 import time
@@ -105,6 +106,10 @@ class GoveeBLEService:
 
         # GLib mainloop
         self.mainloop = None
+
+        # Discovered but unconfigured sensors
+        self._discovered_sensors = set()
+        self._discovered_sensors_path = Path('/data/govee-ble/discovered_sensors.json')
 
         # Shutdown flag
         self.shutdown_requested = False
@@ -280,6 +285,55 @@ class GoveeBLEService:
 
         return service
 
+    def _load_discovered_sensors(self):
+        """Load discovered_sensors.json and prune any MACs now in config."""
+        try:
+            if self._discovered_sensors_path.exists():
+                with open(self._discovered_sensors_path, 'r') as f:
+                    discovered = json.load(f)
+            else:
+                discovered = {}
+        except (json.JSONDecodeError, OSError) as e:
+            _LOGGER.warning(f"Could not read discovered_sensors.json: {e}")
+            discovered = {}
+
+        # Prune MACs that are now configured
+        configured_macs = {s['mac'].upper() for s in self.config.get('sensors', []) if s.get('mac')}
+        pruned = {mac: name for mac, name in discovered.items() if mac.upper() not in configured_macs}
+
+        # Pre-populate in-memory set
+        self._discovered_sensors = {mac.upper() for mac in pruned}
+
+        # Write back pruned file if anything changed
+        if len(pruned) != len(discovered):
+            self._write_discovered_sensors(pruned)
+            _LOGGER.info(f"Pruned {len(discovered) - len(pruned)} configured sensor(s) from discovered list")
+
+        if pruned:
+            _LOGGER.info(f"Loaded {len(pruned)} previously discovered sensor(s)")
+
+    def _save_discovered_sensor(self, mac, name):
+        """Persist a newly discovered sensor to discovered_sensors.json."""
+        try:
+            if self._discovered_sensors_path.exists():
+                with open(self._discovered_sensors_path, 'r') as f:
+                    discovered = json.load(f)
+            else:
+                discovered = {}
+        except (json.JSONDecodeError, OSError):
+            discovered = {}
+
+        discovered[mac.upper()] = name
+        self._write_discovered_sensors(discovered)
+
+    def _write_discovered_sensors(self, data):
+        """Write discovered sensors dict to JSON file."""
+        try:
+            with open(self._discovered_sensors_path, 'w') as f:
+                json.dump(data, f, indent=2)
+        except OSError as e:
+            _LOGGER.warning(f"Could not write discovered_sensors.json: {e}")
+
     def _initialize_services(self):
         """
         Log configured sensors and prepare for lazy service creation.
@@ -288,6 +342,8 @@ class GoveeBLEService:
         ensuring correct model information (H5100/H5105 etc.) from the BLE name.
         """
         sensors = self.config.get('sensors', [])
+
+        self._load_discovered_sensors()
 
         if not sensors:
             _LOGGER.warning("No sensors configured - no sensors will be monitored")
@@ -333,11 +389,9 @@ class GoveeBLEService:
                     return
             else:
                 # Not configured - log as discovered (once per MAC)
-                if not hasattr(self, '_discovered_sensors'):
-                    self._discovered_sensors = set()
-
                 if mac not in self._discovered_sensors and is_govee_device(name, adv_data.get('manufacturer_data', {})):
                     self._discovered_sensors.add(mac)
+                    self._save_discovered_sensor(mac, name)
                     _LOGGER.info(f"Discovered Govee sensor not in sensors: {mac} ({name}) - "
                                 f"Add to config.json sensors array to monitor")
                 return

@@ -30,8 +30,7 @@ from config_manager import ConfigManager
 from btmon_reader import AdvertisementAssembler, BtmonWatchdog
 from parser_adapter import parse_advertisement, is_govee_device
 from govee_temperature_service import GoveeTemperatureService
-
-__version__ = "2.0.0"
+from _version import __version__
 
 _LOGGER = logging.getLogger(__name__)
 

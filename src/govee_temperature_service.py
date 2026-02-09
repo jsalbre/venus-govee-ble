@@ -15,10 +15,9 @@ import re
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'ext/velib_python'))
 
 from vedbus import VeDbusService
+from _version import __version__
 
 _LOGGER = logging.getLogger(__name__)
-
-__version__ = "2.1.0"
 
 
 class GoveeTemperatureService:

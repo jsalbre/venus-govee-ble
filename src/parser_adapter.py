@@ -16,7 +16,6 @@ import logging
 from typing import Optional, Dict, List
 import re
 
-__version__ = "1.1.0"
 PARSER_VERSION = "local_h510x_v1.1.0_h5100_h5105_support"
 
 _LOGGER = logging.getLogger(__name__)

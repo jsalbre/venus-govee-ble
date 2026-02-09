@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-VERSION="1.4.0"
+VERSION=$(grep -oP '(?<=__version__ = ").*(?=")' src/_version.py)
 RELEASE_NAME="govee-ble-deploy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build/${RELEASE_NAME}"
@@ -31,6 +31,7 @@ mkdir -p "$DIST_DIR"
 
 # Copy source files
 echo "Copying source files..."
+cp src/_version.py "$BUILD_DIR/data/govee-ble/"
 cp src/govee_ble_service.py "$BUILD_DIR/data/govee-ble/"
 cp src/govee_temperature_service.py "$BUILD_DIR/data/govee-ble/"
 cp src/parser_adapter.py "$BUILD_DIR/data/govee-ble/"

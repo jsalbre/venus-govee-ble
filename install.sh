@@ -119,6 +119,12 @@ if [ -f "$SCRIPT_DIR"/data/govee-ble/add-sensor.sh ]; then
     echo_success "Helper scripts installed"
 fi
 
+# Step 6b: Copy README for offline reference
+if [ -f "$SCRIPT_DIR"/README.md ]; then
+    cp -f "$SCRIPT_DIR"/README.md /data/govee-ble/
+    echo_success "README installed to /data/govee-ble/README.md"
+fi
+
 # Step 7: Install service (Venus OS style - persist across reboots)
 echo_info "Installing runit service..."
 

@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-VERSION=$(grep -oP '(?<=__version__ = ").*(?=")' src/_version.py)
+VERSION=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/_version.py)
 RELEASE_NAME="govee-ble-deploy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build/${RELEASE_NAME}"

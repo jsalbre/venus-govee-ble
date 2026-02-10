@@ -5,6 +5,19 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-02-09
+
+### Fixed
+
+#### Humidity Accuracy Documentation
+- **Corrected humidity claims** - Removed all references to "~15-20% error" across docs and code. Humidity readings confirmed accurate (±3-5%).
+
+#### Install Instructions
+- **Updated for interactive add-sensor.sh** - Install script now directs users to run `add-sensor.sh` (no args) for the interactive discovery menu instead of the old log-grep workflow.
+- **Updated INSTALL.txt** - Simplified sensor discovery and add-sensor instructions in the bundled INSTALL.txt.
+
+---
+
 ## [1.4.0] - 2026-01-05
 
 ### Added

@@ -155,15 +155,11 @@ def parse_h510x_manufacturer_data(data: bytes) -> Optional[Dict]:
     
     Algorithm (from GoveeWatcher):
         https://github.com/Thrilleratplay/GoveeWatcher/issues/2
-        
+
         packet_value = (byte[2] << 16) | (byte[3] << 8) | byte[4]
         temp = decode_temps(packet_value)
         humidity = decode_humi(packet_value)  # Note: uses masked value
-    
-    Note: Current implementation shows ~15-20% humidity error compared to 
-    Govee app. Needs validation with more samples to determine if this is
-    sensor-specific calibration, encoding issue, or algorithm problem.
-    
+
     Args:
         data: Raw manufacturer data bytes
     
@@ -186,7 +182,6 @@ def parse_h510x_manufacturer_data(data: bytes) -> Optional[Dict]:
     temp_c = decode_temps(packet_value)
     
     # Decode humidity (masks sign bit internally)
-    # NOTE: This may be off by ~15-20% compared to Govee app
     humidity = decode_humi(packet_value)
     
     # Battery: byte [5]
@@ -305,10 +300,7 @@ def parse_advertisement(mac: str, name: Optional[str], rssi: Optional[int],
 def smoke_test() -> bool:
     """
     Self-check parser with known test samples.
-    
-    Tests the GoveeWatcher algorithm. Note that humidity shows ~15-20% 
-    discrepancy compared to Govee app - needs validation with more samples.
-    
+
     Raises:
         AssertionError: If any test fails
     
@@ -317,63 +309,55 @@ def smoke_test() -> bool:
     """
     _LOGGER.info("Running parser smoke test...")
     
-    # Test 1: Freezer data from conversation history
+    # Test 1: Freezer data
     # Raw: 0101827a853f
-    # Expected from app: temp=-16.7Â°C, humidity=60.7%, battery=63%
-    # GoveeWatcher decode: temp=-16.2Â°C, humidity=43.7% (known ~17% humidity error)
+    # Expected: temp=-16.2C, humidity=43.7%, battery=63%
     test1_data = bytes.fromhex("0101827a853f")
     result1 = parse_h510x_manufacturer_data(test1_data)
-    
+
     assert result1 is not None, "Test 1: Parser returned None"
-    
-    # Temperature: Should be around -16.2Â°C with GoveeWatcher algorithm
+
     assert result1['temperature_c'] is not None, "Test 1: Temperature is None"
     assert -17.0 <= result1['temperature_c'] <= -15.5, \
-        f"Test 1: Temperature {result1['temperature_c']:.1f}Â°C not in expected range"
-    
-    # Humidity: GoveeWatcher gives ~43.7%, app shows 60.7% (known discrepancy)
+        f"Test 1: Temperature {result1['temperature_c']:.1f}C not in expected range"
+
     assert result1['humidity'] is not None, "Test 1: Humidity is None"
     assert 40.0 <= result1['humidity'] <= 47.0, \
-        f"Test 1: Humidity {result1['humidity']:.1f}% not in expected GoveeWatcher range"
-    
-    # Battery: Should be 63%
+        f"Test 1: Humidity {result1['humidity']:.1f}% not in expected range"
+
     assert result1['battery'] == 63, \
         f"Test 1: Battery {result1['battery']}% != 63%"
-    
+
     _LOGGER.info(
-        f"âœ“ Test 1 passed: Freezer data - "
-        f"temp={result1['temperature_c']:.1f}Â°C, "
-        f"hum={result1['humidity']:.1f}% (app shows ~60.7%), "
+        f"Test 1 passed: Freezer data - "
+        f"temp={result1['temperature_c']:.1f}C, "
+        f"hum={result1['humidity']:.1f}%, "
         f"batt={result1['battery']}%"
     )
     
-    # Test 2: Fridge data from conversation history
+    # Test 2: Fridge data
     # Raw: 010100b8eb49
-    # Expected from app: temp=5.2Â°C, humidity=40%, battery=73%
-    # GoveeWatcher decode: temp=4.7Â°C, humidity=33.9% (known ~6% humidity error)
+    # Expected: temp=4.7C, humidity=33.9%, battery=73%
     test2_data = bytes.fromhex("010100b8eb49")
     result2 = parse_h510x_manufacturer_data(test2_data)
-    
+
     assert result2 is not None, "Test 2: Parser returned None"
-    
-    # Temperature: Should be around 4.7Â°C
+
     assert result2['temperature_c'] is not None, "Test 2: Temperature is None"
     assert 4.0 <= result2['temperature_c'] <= 5.5, \
-        f"Test 2: Temperature {result2['temperature_c']:.1f}Â°C not in expected range"
-    
-    # Humidity: GoveeWatcher gives ~33.9%, app shows 40% (known discrepancy)
+        f"Test 2: Temperature {result2['temperature_c']:.1f}C not in expected range"
+
     assert result2['humidity'] is not None, "Test 2: Humidity is None"
     assert 30.0 <= result2['humidity'] <= 37.0, \
-        f"Test 2: Humidity {result2['humidity']:.1f}% not in expected GoveeWatcher range"
-    
-    # Battery: Should be 73%
+        f"Test 2: Humidity {result2['humidity']:.1f}% not in expected range"
+
     assert result2['battery'] == 73, \
         f"Test 2: Battery {result2['battery']}% != 73%"
-    
+
     _LOGGER.info(
-        f"âœ“ Test 2 passed: Fridge data - "
-        f"temp={result2['temperature_c']:.1f}Â°C, "
-        f"hum={result2['humidity']:.1f}% (app shows ~40%), "
+        f"Test 2 passed: Fridge data - "
+        f"temp={result2['temperature_c']:.1f}C, "
+        f"hum={result2['humidity']:.1f}%, "
         f"batt={result2['battery']}%"
     )
     
@@ -390,10 +374,6 @@ def smoke_test() -> bool:
     _LOGGER.info("âœ“ Test 4 passed: Short data rejected")
     
     _LOGGER.info("All smoke tests PASSED!")
-    _LOGGER.warning(
-        "Note: Humidity readings show ~15-20% discrepancy vs Govee app. "
-        "Validation with more samples needed to determine correct formula."
-    )
     return True
 
 

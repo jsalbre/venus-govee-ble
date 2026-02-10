@@ -169,29 +169,11 @@ echo "==========================================="
 echo
 
 if [ ! -s /data/govee-ble/config.json ] || ! grep -q '"sensors"' /data/govee-ble/config.json; then
-    echo_warning "Configuration needed!"
-    echo
-    echo "Before starting the service, you must:"
-    echo "  1. Find your Govee sensor MAC addresses"
-    echo "  2. Add them to /data/govee-ble/config.json"
-    echo
-    echo "The service will log discovered sensors automatically."
-    echo "Monitor logs to find sensor MAC addresses:"
-    echo "  tail -f /data/govee-ble/logs/govee_ble.log"
-    echo
     CONFIG_READY=false
 else
     # Check if sensors array has any entries using Python for accurate JSON parsing
     SENSOR_COUNT=$(python3 -c "import json; f=open('/data/govee-ble/config.json'); c=json.load(f); print(len(c.get('sensors', [])))" 2>/dev/null || echo "0")
     if [ "$SENSOR_COUNT" -eq 0 ]; then
-        echo_warning "No sensors configured!"
-        echo
-        echo "The service will log discovered sensors automatically."
-        echo "Monitor logs to find sensor MAC addresses:"
-        echo "  tail -f /data/govee-ble/logs/govee_ble.log"
-        echo
-        echo "Then use /data/govee-ble/add-sensor.sh to add them."
-        echo
         CONFIG_READY=false
     else
         echo_success "Found $SENSOR_COUNT sensor(s) in configuration"
@@ -203,18 +185,10 @@ fi
 if [ "$CONFIG_READY" != true ]; then
     echo_warning "No sensors configured!"
     echo
-    echo "The service will start and log any Govee sensors it discovers."
-    echo "To monitor specific sensors, you need to add them to the sensors array."
+    echo "After starting the service, add sensors with the interactive helper:"
+    echo "  /data/govee-ble/add-sensor.sh"
     echo
-    echo "How to find sensor MAC addresses:"
-    echo "  1. Start the service: svc -u /service/govee-ble"
-    echo "  2. Monitor logs: tail -f /data/govee-ble/logs/govee_ble.log"
-    echo "  3. Look for: 'Discovered Govee sensor not in sensors: MAC (name)'"
-    echo
-    echo "After finding your sensor MAC addresses:"
-    echo "  1. Use add-sensor script: /data/govee-ble/add-sensor.sh MAC [name] [type]"
-    echo "  2. Or edit manually: /data/govee-ble/config.json (sensors array)"
-    echo "  3. Restart service: svc -t /service/govee-ble"
+    echo "It will auto-discover nearby Govee sensors and let you select them."
     echo
 fi
 
@@ -266,14 +240,14 @@ echo "==========================================="
 echo "  Useful Commands"
 echo "==========================================="
 echo
-echo "Add sensor:       /data/govee-ble/add-sensor.sh <MAC> [name] [type]"
+echo "Add sensor:       /data/govee-ble/add-sensor.sh"
 echo "Edit config:      vi /data/govee-ble/config.json"
 echo "Start service:    svc -u /service/govee-ble"
 echo "Stop service:     svc -d /service/govee-ble"
 echo "Restart service:  svc -t /service/govee-ble"
 echo "Check status:     svstat /service/govee-ble"
 echo "View logs:        tail -f /data/govee-ble/logs/govee_ble.log"
-echo "Find sensors:     Look for 'Discovered Govee sensor' in logs"
+echo "Find sensors:     /data/govee-ble/add-sensor.sh (interactive menu)"
 echo
 echo "Documentation:    https://github.com/jsalbre/govee-ble-venus-py"
 echo

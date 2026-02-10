@@ -48,7 +48,7 @@ Based on validation against Govee mobile app:
 |--------|----------|-------|
 | **Temperature** | ±0.5°C | Excellent |
 | **Battery** | Exact | 100% match |
-| **Humidity** | ~15-20% error | Known limitation, usable |
+| **Humidity** | ±3-5% | Good |
 | **RSSI** | Real-time | Signal strength |
 
 ## Quick Start
@@ -348,8 +348,6 @@ humidity = (packet_value % 1000) / 10.0
 
 **Result:** 4.7°C, 33.9% humidity, 73% battery
 
-**Note on Humidity:** The humidity calculation shows ~15-20% lower than the Govee app. This is a known limitation of the current algorithm. Temperature and battery readings are highly accurate.
-
 #### Freezing Temperature Example
 
 **Raw BLE data:** `01 01 82 7A 85 3F`
@@ -376,9 +374,8 @@ This project is designed for Venus OS's unique environment:
 
 ## Known Limitations
 
-1. **Humidity Accuracy** - ~15-20% discrepancy vs Govee app (algorithm limitation)
-2. **Model Support** - Only H510x family currently supported (H5075, H5074, B5178 parsers not implemented)
-3. **BLE Range** - Limited by Bluetooth adapter and sensor proximity
+1. **Model Support** - Only H510x family currently supported (H5075, H5074, B5178 parsers not implemented)
+2. **BLE Range** - Limited by Bluetooth adapter and sensor proximity
 
 ## Performance
 

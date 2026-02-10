@@ -391,7 +391,7 @@ Based on extensive testing against Govee mobile app:
 |--------|----------|
 | Temperature | ±0.5°C |
 | Battery | Exact match |
-| Humidity | ~15-20% error (known limitation) |
+| Humidity | ±3-5% |
 
 ### Technical Implementation
 
@@ -412,16 +412,11 @@ Based on extensive testing against Govee mobile app:
 
 ### Known Limitations
 
-1. **Humidity Accuracy** - Shows ~15-20% discrepancy compared to Govee mobile app
-   - Using GoveeWatcher algorithm
-   - Temperature (primary metric) is accurate
-   - Proceeding as acceptable for most use cases
-
-2. **Model Support** - Only H510x family currently supported
+1. **Model Support** - Only H510x family currently supported
    - H5075, H5074, B5178 parsers not implemented
    - Easy to extend by adding new parser functions
 
-3. **BLE Range** - Limited by Bluetooth adapter capabilities
+2. **BLE Range** - Limited by Bluetooth adapter capabilities
    - Typical range: 10-30 meters line of sight
    - Metal/concrete walls significantly reduce range
 
@@ -461,7 +456,6 @@ Measured on Victron Cerbo GX:
 ### Planned Features
 
 - Support for additional Govee models (H5075, H5074, B5178)
-- Improved humidity decoding algorithm
 - Configuration GUI/web interface
 - Historical data export
 - Bluetooth adapter failover

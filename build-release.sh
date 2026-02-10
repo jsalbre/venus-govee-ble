@@ -108,33 +108,21 @@ QUICK START
    IMPORTANT: If updating, your previous installation is automatically
    backed up to /data/govee-ble.backup.YYYYMMDD_HHMMSS for safety.
 
-5. Find your Govee sensor MAC addresses:
+5. Add sensors using the interactive helper:
 
-   The service automatically logs discovered Govee sensors.
-   Start the service and monitor the logs:
+   /data/govee-ble/add-sensor.sh
 
-   svc -u /service/govee-ble
-   tail -f /data/govee-ble/logs/govee_ble.log
-
-   Look for lines like:
-   "Discovered Govee sensor not in sensors: A4:C1:38:XX:XX:XX (GVH5101_XXXX)"
+   The menu will show any auto-discovered sensors and let you
+   select them, scan for new sensors, or enter a MAC manually.
 
    NOTE: Govee H510x sensors do NOT display MAC addresses on
    the device itself or in the Govee mobile app.
 
-6. Add sensors to configuration:
-
-   Use the add-sensor.sh helper script:
-   /data/govee-ble/add-sensor.sh A4:C1:38:XX:XX:XX "Sensor Name" [type]
-
-   Or edit manually:
-   vi /data/govee-ble/config.json
-
-7. Start the service (if not already started):
+6. Start the service (if not already started):
 
    svc -u /service/govee-ble
 
-8. Verify in Venus OS GUI:
+7. Verify in Venus OS GUI:
 
    Remote Console → Settings → Temperature sensors
 
@@ -170,27 +158,13 @@ IMPORTANT: FINDING SENSOR MAC ADDRESSES
 Govee H510x sensors do NOT show their MAC addresses anywhere
 on the physical device or in the Govee mobile app.
 
-You MUST use one of these methods to find them:
+Use the interactive helper to find and add sensors:
 
-Method 1 (RECOMMENDED): Monitor service logs
+   /data/govee-ble/add-sensor.sh
 
-   The service automatically discovers and logs Govee sensors.
-   Start the service and watch the logs:
-
-   svc -u /service/govee-ble
-   tail -f /data/govee-ble/logs/govee_ble.log
-
-   Look for: "Discovered Govee sensor not in sensors:"
-
-Method 2: Manual scanning with btmon:
-
-   btmon -T | grep -i -A 3 gvh
-
-   Look for lines showing:
-   Address: A4:C1:38:XX:XX:XX (OUI A4-C1-38)
-   Complete Local Name: GVH5101_XXXX
-
-   The "Address" is what you need (uppercase format).
+The menu will show auto-discovered sensors and let you scan
+for new ones. The service also logs discovered sensors to the
+log file for reference.
 
 =========================================================
 

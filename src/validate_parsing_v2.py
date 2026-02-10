@@ -325,7 +325,7 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
                              mac_to_sensor_name: Dict[str, str],
                              strategy: str = 'last',
                              tolerance_temp: float = 1.0,
-                             tolerance_humidity: float = 20.0,  # Increased for known discrepancy
+                             tolerance_humidity: float = 5.0,
                              time_window_sec: int = 30) -> Tuple[bool, List[Dict]]:
     """
     Compare our samples against app export using 1-minute windowing.
@@ -336,7 +336,7 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
         mac_to_sensor_name: Map MAC addresses to sensor names in app export
         strategy: Windowing strategy ('last', 'first', 'average', 'median')
         tolerance_temp: Max temperature difference (Â°C)
-        tolerance_humidity: Max humidity difference (%) - default 20% for known error
+        tolerance_humidity: Max humidity difference (%)
         time_window_sec: Max time difference for matching (seconds)
     
     Returns:
@@ -458,8 +458,8 @@ def main():
                        help='App timezone offset from UTC in hours (default: -6 for CST)')
     parser.add_argument('--temp-tolerance', type=float, default=1.0,
                        help='Temperature tolerance in Â°C (default: 1.0)')
-    parser.add_argument('--humidity-tolerance', type=float, default=20.0,
-                       help='Humidity tolerance in %% (default: 20.0 for known error)')
+    parser.add_argument('--humidity-tolerance', type=float, default=5.0,
+                       help='Humidity tolerance in %% (default: 5.0)')
     parser.add_argument('--verbose', action='store_true',
                        help='Enable debug logging')
     

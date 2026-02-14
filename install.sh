@@ -1,6 +1,5 @@
 #!/bin/bash
 # Govee BLE Venus OS - Installation Script
-# Version: 1.1.0
 
 set -e  # Exit on error
 

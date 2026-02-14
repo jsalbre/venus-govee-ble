@@ -24,5 +24,5 @@
   "battery": {
     "low_alarm_threshold_pct": 15.0
   },
-  "parser_version": "local_h510x_v1.0.3_humidity_fix"
+  "parser_version": "local_h510x_v1.1.0_h5100_h5105_support"
 }

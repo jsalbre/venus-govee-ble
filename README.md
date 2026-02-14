@@ -80,68 +80,32 @@ The installer automatically:
 - Sets up the runit service
 - Prompts to start the service
 
-### 3. Find Your Sensors
+### 3. Add Sensors
 
-**Important:** Govee H510x sensors do NOT display MAC addresses on the device or in the Govee app.
+**Important:** Govee H510x sensors do NOT display MAC addresses on the device or in the Govee app. The service discovers them automatically via BLE.
 
-The service automatically discovers and logs Govee sensors. Start the service and monitor the logs:
+Start the service, then use the interactive helper to add sensors:
 
 ```bash
-# Start service
+# Start service (discovers nearby Govee sensors automatically)
 svc -u /service/govee-ble
 
-# Watch for discovered sensors
-tail -f /data/govee-ble/logs/govee_ble.log
+# Run the interactive sensor menu
+/data/govee-ble/add-sensor.sh
 ```
 
-Look for log entries like:
-```
-Discovered Govee sensor not in sensors: A4:C1:38:XX:XX:XX (GVH5101_XXXX) - Add to config.json sensors array to monitor
-```
-
-### 4. Configure
-
-Add discovered MAC addresses to config:
-
-```bash
-vi /data/govee-ble/config.json
-```
-
-Example configuration:
-
-```json
-{
-  "sensors": [
-    {
-      "mac": "A4:C1:38:XX:XX:XX",
-      "name": "Freezer",
-      "temperature_type": 6,
-      "humidity_enabled": true
-    },
-    {
-      "mac": "A4:C1:38:YY:YY:YY",
-      "name": "Fridge",
-      "temperature_type": 1,
-      "humidity_enabled": false
-    }
-  ]
-}
-```
-
-Or use the helper script:
-```bash
-/data/govee-ble/add-sensor.sh A4:C1:38:XX:XX:XX Freezer 6
-/data/govee-ble/add-sensor.sh A4:C1:38:YY:YY:YY Fridge 1
-```
+The menu shows sensors the service has discovered but aren't yet configured. You can:
+- **Select a discovered sensor** — choose by number, set name and type
+- **Scan** — run a BLE scan to find sensors not yet discovered
+- **Manual entry** — enter a MAC address directly
 
 **Temperature Types:** 0=Battery, 1=Fridge, 2=Generic, 3=Room, 4=Outdoor, 5=Water heater, 6=Freezer
 
-### 5. Start and Verify
+**Alternative:** Edit `/data/govee-ble/config.json` directly (see Configuration section below).
+
+### 4. Verify
 
 ```bash
-# Start service (if not already running)
-svc -u /service/govee-ble
-
 # Check logs
 tail -f /data/govee-ble/logs/govee_ble.log
 ```
@@ -271,6 +235,7 @@ dbus-send --system --print-reply \
 ```
 govee-ble-venus-py/
 ├── src/                           # Source code
+│   ├── _version.py                # Version (single source of truth)
 │   ├── govee_ble_service.py       # Main service orchestrator
 │   ├── govee_temperature_service.py # D-Bus temperature service
 │   ├── parser_adapter.py          # BLE advertisement parser
@@ -367,7 +332,7 @@ humidity = (packet_value % 1000) / 10.0
 This project is designed for Venus OS's unique environment:
 
 - **Python:** 3.12.12 (no pip, standard library only)
-- **Shell:** BusyBox ash
+- **Shell:** bash (BusyBox utilities)
 - **Bluetooth:** BlueZ 5.72 with btmon utility
 - **Init:** runit service manager
 - **D-Bus:** System bus for Venus OS integration

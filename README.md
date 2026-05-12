@@ -390,10 +390,6 @@ rm -rf /service/govee-ble
 rm -rf /data/govee-ble
 ```
 
-## Development
-
-For developers interested in contributing or extending this project, a `dev-notes/` directory is maintained locally (gitignored — not in the repository or releases).
-
 ## License
 
 MIT License - See LICENSE file for details

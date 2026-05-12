@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Stale `parser_version` default** - `config_manager.py` DEFAULT_CONFIG had version `v1.0.3` instead of `v1.1.0`
 - **Commented-out code** - Removed placeholder commented-out registry entries in `parser_adapter.py`
 - **Garbled Unicode** - Removed encoding-corrupted characters (`âœ"`, `Â°C`, `â†'`) from `parser_adapter.py`, `config_manager.py`, and `validate_parsing_v2.py`
-- **CHANGELOG cleanup** - Moved planned features from `[Unreleased]` section to `dev-notes/TODO.md` where they belong
+- **CHANGELOG cleanup** - Moved planned features from `[Unreleased]` section to the project TODO list where they belong
 
 ---
 
@@ -358,7 +358,6 @@ Device instances will be automatically calculated and persisted.
 #### Documentation
 - **README.md** - Added BLE data decoding formulas with real examples
 - **README.md** - Removed all find-sensors.sh references, updated discovery method
-- **docs/INSTALL.md** - Corrected sensor discovery instructions (Govee app doesn't show MACs)
 - **All files** - Anonymized MAC addresses (kept OUI A4:C1:38)
 - **All files** - Updated GitHub username from placeholder to jsalbre
 
@@ -449,9 +448,6 @@ Based on extensive testing against Govee mobile app:
 ### Documentation
 
 - **README.md** - Production-ready user guide
-- **docs/INSTALL.md** - Detailed installation instructions
-- **docs/DEPLOYMENT.md** - Deployment and troubleshooting guide
-- **dev-notes/** - Development notes and context (not in releases)
 
 ### Security
 

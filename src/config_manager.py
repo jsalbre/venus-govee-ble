@@ -38,7 +38,7 @@ class ConfigManager:
             "low_alarm_threshold_pct": 15.0
         },
         "temperature_type_default": 2,  # Generic
-        "parser_version": "local_h510x_v1.0.3_humidity_fix"
+        "parser_version": "local_h510x_v1.1.0_h5100_h5105_support"
     }
     
     def __init__(self, config_path: Path):
@@ -548,26 +548,26 @@ def main():
     print(f"  Instance: {manager.get_device_instance(mac)}")
     print(f"  Temp Type: {manager.get_temperature_type(mac)}")
     print(f"  Is Allowed: {manager.is_allowed(mac)}")
-    print(f"  âœ“ Device info retrieved\n")
+    print(f”  Device info retrieved\n”)
     
     # Test 5: Temperature type override
     print("Test 5: Setting temperature type override...")
     manager.update_temperature_type("AA:BB:CC:DD:EE:FF", 1)  # Fridge
     print(f"  Temp Type: {manager.get_temperature_type('AA:BB:CC:DD:EE:FF')}")
-    print(f"  âœ“ Temperature type updated\n")
+    print(f”  Temperature type updated\n”)
     
     # Test 6: Export
     print("Test 6: Exporting config...")
     json_str = manager.export_json()
     print(f"  Config JSON:\n{json_str}")
-    print(f"  âœ“ Config exported\n")
+    print(f”  Config exported\n”)
     
     # Test 7: Remove sensor
     print("Test 7: Removing sensor...")
     manager.remove_sensor("11:22:33:44:55:66")
     print(f"  Sensors: {manager.get_sensors()}")
     print(f"  Is Allowed (removed): {manager.is_allowed('11:22:33:44:55:66')}")
-    print(f"  âœ“ Device removed\n")
+    print(f”  Device removed\n”)
     
     print("="*60)
     print("All tests passed!")

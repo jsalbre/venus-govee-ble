@@ -221,10 +221,6 @@ PARSER_REGISTRY = {
     'H5102': parse_h510x_manufacturer_data,
     'H5104': parse_h510x_manufacturer_data,
     'H5105': parse_h510x_manufacturer_data,
-    # Future models:
-    # 'H5075': parse_h5075_manufacturer_data,
-    # 'H5074': parse_h5074_manufacturer_data,
-    # 'B5178': parse_b5178_manufacturer_data,
 }
 
 
@@ -365,13 +361,13 @@ def smoke_test() -> bool:
     test3_data = bytes.fromhex("0201827a853f")  # Wrong first marker
     result3 = parse_h510x_manufacturer_data(test3_data)
     assert result3 is None, "Test 3: Should reject invalid marker"
-    _LOGGER.info("âœ“ Test 3 passed: Invalid marker rejected")
+    _LOGGER.info(“Test 3 passed: Invalid marker rejected”)
     
     # Test 4: Short data rejection
     test4_data = bytes.fromhex("0101827a")  # Only 4 bytes
     result4 = parse_h510x_manufacturer_data(test4_data)
     assert result4 is None, "Test 4: Should reject short data"
-    _LOGGER.info("âœ“ Test 4 passed: Short data rejected")
+    _LOGGER.info(“Test 4 passed: Short data rejected”)
     
     _LOGGER.info("All smoke tests PASSED!")
     return True

@@ -445,15 +445,12 @@ class GoveeBLEService:
             universal_newlines=True
         )
 
-        # Create assembler with allowlist filter and watchdog
-        allowlist = self.config.get('allowlist', [])
-        self.assembler = AdvertisementAssembler(allowlist=allowlist)
+        # Create assembler and watchdog
+        self.assembler = AdvertisementAssembler()
         self.watchdog = BtmonWatchdog(
             stall_timeout_sec=180,
             heartbeat_interval_sec=60
         )
-
-        _LOGGER.info(f"Assembler configured to filter for {len(allowlist)} allowlisted MACs")
 
         _LOGGER.info("btmon reader started")
 

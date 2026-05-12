@@ -335,7 +335,7 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
         app_samples: Govee app export samples (sensor_name -> list)
         mac_to_sensor_name: Map MAC addresses to sensor names in app export
         strategy: Windowing strategy ('last', 'first', 'average', 'median')
-        tolerance_temp: Max temperature difference (Â°C)
+        tolerance_temp: Max temperature difference (C)
         tolerance_humidity: Max humidity difference (%)
         time_window_sec: Max time difference for matching (seconds)
     
@@ -354,7 +354,7 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
         app_readings = app_samples[sensor_name]
         
         print(f"\n{'='*70}")
-        print(f"Comparing MAC: {mac} â†’ Sensor: {sensor_name}")
+        print(f"Comparing MAC: {mac} -> Sensor: {sensor_name}")
         print(f"  Our samples: {len(our_readings)}")
         print(f"  App samples: {len(app_readings)}")
         print(f"  Windowing strategy: {strategy}")
@@ -394,7 +394,7 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
             temp_ok = temp_diff <= tolerance_temp
             humidity_ok = humidity_diff <= tolerance_humidity
             
-            status = "âœ“ PASS" if (temp_ok and humidity_ok) else "âœ— FAIL"
+            status = “PASS” if (temp_ok and humidity_ok) else “FAIL”
             
             comparison = {
                 'mac': mac,
@@ -416,10 +416,10 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
             comparisons.append(comparison)
             
             print(f"{status} | App time: {app_reading['timestamp_local']}, Time diff: {min_diff:.0f}s")
-            print(f"  Temperature: {our_reading['temperature_c']:.1f}Â°C vs {app_reading['temperature_c']:.1f}Â°C "
-                  f"(diff: {temp_diff:.2f}Â°C) {'âœ“' if temp_ok else 'âœ—'}")
-            print(f"  Humidity:    {our_reading['humidity']:.1f}% vs {app_reading['humidity']:.1f}% "
-                  f"(diff: {humidity_diff:.2f}%) {'âœ“' if humidity_ok else 'âœ—'}")
+            print(f”  Temperature: {our_reading['temperature_c']:.1f}C vs {app_reading['temperature_c']:.1f}C “
+                  f”(diff: {temp_diff:.2f}C) {'OK' if temp_ok else 'FAIL'}”)
+            print(f”  Humidity:    {our_reading['humidity']:.1f}% vs {app_reading['humidity']:.1f}% “
+                  f”(diff: {humidity_diff:.2f}%) {'OK' if humidity_ok else 'FAIL'}”)
             if hasattr(our_reading, '__getitem__') and 'sample_count' in our_reading:
                 print(f"  (Aggregated from {our_reading['sample_count']} samples)")
             # Show raw data if available
@@ -457,7 +457,7 @@ def main():
     parser.add_argument('--timezone-offset', type=int, default=-6,
                        help='App timezone offset from UTC in hours (default: -6 for CST)')
     parser.add_argument('--temp-tolerance', type=float, default=1.0,
-                       help='Temperature tolerance in Â°C (default: 1.0)')
+                       help='Temperature tolerance in C (default: 1.0)')
     parser.add_argument('--humidity-tolerance', type=float, default=5.0,
                        help='Humidity tolerance in %% (default: 5.0)')
     parser.add_argument('--verbose', action='store_true',
@@ -477,9 +477,9 @@ def main():
     print("Running parser smoke test...")
     try:
         parser_adapter.smoke_test()
-        print("âœ“ Parser smoke test passed\n")
+        print(“Parser smoke test passed\n”)
     except AssertionError as e:
-        print(f"âœ— Parser smoke test FAILED: {e}")
+        print(f"Parser smoke test FAILED: {e}")
         return 1
     
     if args.collect:
@@ -499,11 +499,11 @@ def main():
                 first = readings[0]
                 last = readings[-1]
                 print(f"  First: {first['timestamp']} - "
-                      f"T:{first['temperature_c']:.1f}Â°C, "
+                      f"T:{first['temperature_c']:.1f}C, "
                       f"H:{first['humidity']:.1f}%, "
                       f"B:{first['battery']}%")
                 print(f"  Last:  {last['timestamp']} - "
-                      f"T:{last['temperature_c']:.1f}Â°C, "
+                      f"T:{last['temperature_c']:.1f}C, "
                       f"H:{last['humidity']:.1f}%, "
                       f"B:{last['battery']}%")
         
@@ -546,7 +546,7 @@ def main():
                 sensor_name = Path(csv_path).stem
                 if i < len(macs):
                     mac_to_sensor[macs[i]] = sensor_name
-                    _LOGGER.info(f"Auto-mapped {macs[i]} â†’ {sensor_name}")
+                    _LOGGER.info(f"Auto-mapped {macs[i]} -> {sensor_name}")
         
         if not mac_to_sensor:
             print("\nError: MAC to sensor name mapping required!")
@@ -591,14 +591,14 @@ def main():
             print(f"Humidity: {hum_pass}/{total} passed ({100*hum_pass/total:.1f}%)")
             print(f"Overall: {overall_pass}/{total} passed ({100*overall_pass/total:.1f}%)")
             print(f"\nAverage differences:")
-            print(f"  Temperature: {avg_temp_diff:.2f}Â°C")
+            print(f"  Temperature: {avg_temp_diff:.2f}C")
             print(f"  Humidity: {avg_hum_diff:.2f}%")
             
             print(f"\n{'='*70}")
             if passed:
-                print("âœ“ ALL COMPARISONS PASSED")
+                print(“ALL COMPARISONS PASSED”)
             else:
-                print("âœ— SOME COMPARISONS FAILED")
+                print(“SOME COMPARISONS FAILED”)
             print(f"{'='*70}")
         
         return 0 if passed else 1

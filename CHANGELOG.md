@@ -5,6 +5,19 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-05-12
+
+### Fixed
+
+- **Missing LICENSE file** - Added MIT license (was referenced in README but missing from repo)
+- **Stale `allowlist` config read** - `govee_ble_service.py` was reading a `config.get('allowlist')` key removed in v1.2.0, producing a misleading log line ("Assembler configured to filter for 0 allowlisted MACs")
+- **Stale `parser_version` default** - `config_manager.py` DEFAULT_CONFIG had version `v1.0.3` instead of `v1.1.0`
+- **Commented-out code** - Removed placeholder commented-out registry entries in `parser_adapter.py`
+- **Garbled Unicode** - Removed encoding-corrupted characters (`âœ"`, `Â°C`, `â†'`) from `parser_adapter.py`, `config_manager.py`, and `validate_parsing_v2.py`
+- **CHANGELOG cleanup** - Moved planned features from `[Unreleased]` section to `dev-notes/TODO.md` where they belong
+
+---
+
 ## [1.4.1] - 2026-02-09
 
 ### Fixed
@@ -463,18 +476,6 @@ Measured on Victron Cerbo GX:
 - **Configuration:** JSON file with MAC allowlist
 - **Updates:** Stop service → replace files → restart
 - **Rollback:** Replace files with previous version
-
-## [Unreleased]
-
-### Planned Features
-
-- Support for additional Govee models (H5075, H5074, B5178)
-- Configuration GUI/web interface
-- Historical data export
-- Bluetooth adapter failover
-- Multi-adapter support
-
----
 
 ## Release Notes
 

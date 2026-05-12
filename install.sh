@@ -3,7 +3,7 @@
 
 set -e  # Exit on error
 
-VERSION="1.4.1"
+VERSION="1.4.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Color output (if supported)

@@ -1,6 +1,6 @@
 # Govee BLE Venus OS Bridge
 
-**Version:** 1.4.1
+**Version:** 1.4.2
 **Status:** Production Ready
 
 Python bridge for integrating Govee H510x Bluetooth temperature/humidity sensors with Victron Energy Venus OS.
@@ -392,7 +392,7 @@ rm -rf /data/govee-ble
 
 ## Development
 
-For developers interested in contributing or extending this project, see `dev-notes/` (not included in releases).
+For developers interested in contributing or extending this project, a `dev-notes/` directory is maintained locally (gitignored — not in the repository or releases).
 
 ## License
 

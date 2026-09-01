@@ -26,13 +26,16 @@ if [ "$scriptAction" == 'INSTALL' ]; then
         if [ "$MIGRATE_OK" == 'true' ]; then
             logMessage "Migrated config.json/discovered_sensors.json to $SETUP_OPTIONS_DIR"
 
-            svc -d /service/govee-ble > /dev/null 2>&1
+            svc -dx /service/govee-ble > /dev/null 2>&1
             rm -f /service/govee-ble
             logMessage "Stopped and removed old bespoke service at /service/govee-ble"
 
             if [ -f /data/rc.local ]; then
-                sed -i '/# Govee BLE Service/d; /ln -sf \/data\/govee-ble\/service \/service\/govee-ble/d' /data/rc.local
-                logMessage "Removed old rc.local boot hook"
+                OLD_HOOK_LINES=$(grep -c 'govee-ble' /data/rc.local 2>/dev/null)
+                if [ "$OLD_HOOK_LINES" != "0" ]; then
+                    sed -i '/govee-ble/d' /data/rc.local
+                    logMessage "Removed $OLD_HOOK_LINES old rc.local boot-hook line(s)"
+                fi
             fi
 
             rm -rf "$OLD_PACKAGE_DIR"
@@ -45,6 +48,30 @@ if [ "$scriptAction" == 'INSTALL' ]; then
         cp "$scriptDir/config.example.json" "$SETUP_OPTIONS_DIR/config.json"
         logMessage "Seeded default config.json from config.example.json at $SETUP_OPTIONS_DIR/config.json"
     fi
+
+    # Normalize log_path unconditionally - self-heals a migrated (or otherwise
+    # stale) config.json that still points at the old /data/govee-ble/ location,
+    # which would otherwise cause the service to recreate that directory.
+    NORMALIZE_RESULT=$(python3 -c "
+import json, os, tempfile
+p = '$SETUP_OPTIONS_DIR/config.json'
+correct = '$SETUP_OPTIONS_DIR/logs/govee_ble.log'
+try:
+    cfg = json.load(open(p))
+    if cfg.get('log_path') != correct:
+        cfg['log_path'] = correct
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(p))
+        with os.fdopen(fd, 'w') as f:
+            json.dump(cfg, f, indent=2)
+        os.replace(tmp, p)
+        print('changed')
+except Exception as e:
+    print('error: %s' % e)
+" 2>&1)
+    case "$NORMALIZE_RESULT" in
+        changed) logMessage "Normalized stale log_path in config.json to $SETUP_OPTIONS_DIR/logs/govee_ble.log" ;;
+        error:*) logMessage "ERROR: could not normalize log_path in config.json: $NORMALIZE_RESULT" ;;
+    esac
 
     SENSOR_COUNT=$(python3 -c "import json; print(len(json.load(open('$SETUP_OPTIONS_DIR/config.json')).get('sensors', [])))" 2>/dev/null)
     if [ "$SENSOR_COUNT" == "0" ] || [ -z "$SENSOR_COUNT" ]; then

@@ -4,8 +4,8 @@
 
 set -e
 
-CONFIG_FILE="/data/govee-ble/config.json"
-DISCOVERED_FILE="/data/govee-ble/discovered_sensors.json"
+CONFIG_FILE="/data/setupOptions/venus-govee-ble/config.json"
+DISCOVERED_FILE="/data/setupOptions/venus-govee-ble/discovered_sensors.json"
 
 # --- Help flag ---
 case "${1:-}" in
@@ -50,7 +50,7 @@ if [ -z "$1" ]; then
             SENSOR_LIST=$(python3 << 'LIST_EOF'
 import json, sys
 try:
-    with open("/data/govee-ble/discovered_sensors.json", "r") as f:
+    with open("/data/setupOptions/venus-govee-ble/discovered_sensors.json", "r") as f:
         discovered = json.load(f)
     if discovered:
         for mac, name in discovered.items():
@@ -112,7 +112,7 @@ LIST_EOF
                 python3 << SCAN_EOF
 import sys, json, subprocess, time
 
-sys.path.insert(0, '/data/govee-ble/src')
+sys.path.insert(0, '/data/venus-govee-ble/src')
 from btmon_reader import AdvertisementAssembler
 
 # Load already-configured MACs
@@ -360,10 +360,10 @@ if [ $? -eq 0 ]; then
         [nN])
             echo
             echo "Restart the service manually to activate:"
-            echo "  svc -t /service/govee-ble"
+            echo "  svc -t /service/venus-govee-ble"
             ;;
         *)
-            svc -t /service/govee-ble
+            svc -t /service/venus-govee-ble
             echo "Service restarted."
             ;;
     esac
@@ -372,7 +372,7 @@ if [ $? -eq 0 ]; then
     echo "  cat $CONFIG_FILE"
     echo
     echo "Monitor logs:"
-    echo "  tail -f /data/govee-ble/logs/govee_ble.log"
+    echo "  tail -f /data/setupOptions/venus-govee-ble/logs/govee_ble.log"
     echo
 else
     echo

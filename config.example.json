@@ -1,22 +1,9 @@
 {
-  "sensors": [
-    {
-      "mac": "A4:C1:38:XX:XX:XX",
-      "name": "Freezer",
-      "temperature_type": 6,
-      "humidity_enabled": true
-    },
-    {
-      "mac": "A4:C1:38:YY:YY:YY",
-      "name": "Fridge",
-      "temperature_type": 1,
-      "humidity_enabled": false
-    }
-  ],
+  "sensors": [],
   "temperature_type_default": 2,
   "ble_interface": "hci0",
   "log_level": "INFO",
-  "log_path": "/data/govee-ble/logs/govee_ble.log",
+  "log_path": "/data/setupOptions/venus-govee-ble/logs/govee_ble.log",
   "update_interval_sec": 1,
   "stale_threshold_sec": 300,
   "restart_min_delay_sec": 30,

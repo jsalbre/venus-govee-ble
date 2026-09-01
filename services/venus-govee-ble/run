@@ -1,0 +1,4 @@
+#!/bin/sh
+echo "*** starting venus-govee-ble ***"
+exec 2>&1
+exec nice -n 15 python3 /data/venus-govee-ble/src/govee_ble_service.py /data/setupOptions/venus-govee-ble/config.json

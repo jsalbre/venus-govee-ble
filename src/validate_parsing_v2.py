@@ -394,7 +394,7 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
             temp_ok = temp_diff <= tolerance_temp
             humidity_ok = humidity_diff <= tolerance_humidity
             
-            status = “PASS” if (temp_ok and humidity_ok) else “FAIL”
+            status = "PASS" if (temp_ok and humidity_ok) else "FAIL"
             
             comparison = {
                 'mac': mac,
@@ -416,10 +416,10 @@ def compare_windowed_samples(our_samples: Dict, app_samples: Dict,
             comparisons.append(comparison)
             
             print(f"{status} | App time: {app_reading['timestamp_local']}, Time diff: {min_diff:.0f}s")
-            print(f”  Temperature: {our_reading['temperature_c']:.1f}C vs {app_reading['temperature_c']:.1f}C “
-                  f”(diff: {temp_diff:.2f}C) {'OK' if temp_ok else 'FAIL'}”)
-            print(f”  Humidity:    {our_reading['humidity']:.1f}% vs {app_reading['humidity']:.1f}% “
-                  f”(diff: {humidity_diff:.2f}%) {'OK' if humidity_ok else 'FAIL'}”)
+            print(f"  Temperature: {our_reading['temperature_c']:.1f}C vs {app_reading['temperature_c']:.1f}C "
+                  f"(diff: {temp_diff:.2f}C) {'OK' if temp_ok else 'FAIL'}")
+            print(f"  Humidity:    {our_reading['humidity']:.1f}% vs {app_reading['humidity']:.1f}% "
+                  f"(diff: {humidity_diff:.2f}%) {'OK' if humidity_ok else 'FAIL'}")
             if hasattr(our_reading, '__getitem__') and 'sample_count' in our_reading:
                 print(f"  (Aggregated from {our_reading['sample_count']} samples)")
             # Show raw data if available
@@ -477,7 +477,7 @@ def main():
     print("Running parser smoke test...")
     try:
         parser_adapter.smoke_test()
-        print(“Parser smoke test passed\n”)
+        print("Parser smoke test passed\n")
     except AssertionError as e:
         print(f"Parser smoke test FAILED: {e}")
         return 1
@@ -596,9 +596,9 @@ def main():
             
             print(f"\n{'='*70}")
             if passed:
-                print(“ALL COMPARISONS PASSED”)
+                print("ALL COMPARISONS PASSED")
             else:
-                print(“SOME COMPARISONS FAILED”)
+                print("SOME COMPARISONS FAILED")
             print(f"{'='*70}")
         
         return 0 if passed else 1

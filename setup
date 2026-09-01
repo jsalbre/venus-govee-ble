@@ -1,0 +1,55 @@
+#!/bin/bash
+
+packageName="venus-govee-ble"
+source "/data/SetupHelper/HelperResources/IncludeHelpers"
+
+OLD_PACKAGE_DIR="/data/govee-ble"
+SETUP_OPTIONS_DIR="/data/setupOptions/venus-govee-ble"
+
+if [ "$scriptAction" == 'INSTALL' ]; then
+    mkdir -p "$SETUP_OPTIONS_DIR"
+
+    if [ -d "$OLD_PACKAGE_DIR" ]; then
+        logMessage "Found pre-SetupHelper install at $OLD_PACKAGE_DIR, migrating"
+
+        MIGRATE_OK=true
+        for f in config.json discovered_sensors.json; do
+            if [ -f "$OLD_PACKAGE_DIR/$f" ]; then
+                cp -f "$OLD_PACKAGE_DIR/$f" "$SETUP_OPTIONS_DIR/$f"
+                if [ ! -s "$SETUP_OPTIONS_DIR/$f" ]; then
+                    logMessage "ERROR: migration copy of $f failed or is empty, leaving $OLD_PACKAGE_DIR in place"
+                    MIGRATE_OK=false
+                fi
+            fi
+        done
+
+        if [ "$MIGRATE_OK" == 'true' ]; then
+            logMessage "Migrated config.json/discovered_sensors.json to $SETUP_OPTIONS_DIR"
+
+            svc -d /service/govee-ble > /dev/null 2>&1
+            rm -f /service/govee-ble
+            logMessage "Stopped and removed old bespoke service at /service/govee-ble"
+
+            if [ -f /data/rc.local ]; then
+                sed -i '/# Govee BLE Service/d; /ln -sf \/data\/govee-ble\/service \/service\/govee-ble/d' /data/rc.local
+                logMessage "Removed old rc.local boot hook"
+            fi
+
+            rm -rf "$OLD_PACKAGE_DIR"
+            rm -rf /data/govee-ble.backup.*
+            logMessage "Removed old install directory and any backups at $OLD_PACKAGE_DIR and /data/govee-ble.backup.*"
+        fi
+    fi
+
+    if [ ! -s "$SETUP_OPTIONS_DIR/config.json" ]; then
+        cp "$scriptDir/config.example.json" "$SETUP_OPTIONS_DIR/config.json"
+        logMessage "Seeded default config.json from config.example.json at $SETUP_OPTIONS_DIR/config.json"
+    fi
+
+    SENSOR_COUNT=$(python3 -c "import json; print(len(json.load(open('$SETUP_OPTIONS_DIR/config.json')).get('sensors', [])))" 2>/dev/null)
+    if [ "$SENSOR_COUNT" == "0" ] || [ -z "$SENSOR_COUNT" ]; then
+        logMessage "No sensors configured yet - run add-sensor.sh to add one"
+    fi
+fi
+
+endScript 'INSTALL_FILES' 'INSTALL_SERVICES'

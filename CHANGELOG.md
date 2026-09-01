@@ -5,6 +5,30 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-01
+
+### Changed
+
+- **SetupHelper packaging** - Replaced the bespoke `install.sh` (manual runit symlink + `/data/rc.local` boot hook) with Victron's community SetupHelper framework (`setup`, `version`, `gitHubInfo`, `services/venus-govee-ble/`). PackageManager now handles install/update/uninstall/firmware-update recovery. `setup install auto` auto-migrates a pre-1.5.0 install: `config.json`/`discovered_sensors.json` move to `/data/setupOptions/venus-govee-ble/`, and the old service, boot hook, install directory, and any timestamped backups are removed automatically.
+- **Repository renamed** - `jsalbre/govee-ble-venus-py` -> `jsalbre/venus-govee-ble`, matching the `venus-<thing>` naming used by this project's siblings. On-device package/service name changed from `govee-ble` to `venus-govee-ble` to match.
+- **Persistent state relocated** - `config.json`, `discovered_sensors.json`, and `logs/` moved from `/data/govee-ble/` to `/data/setupOptions/venus-govee-ble/`, since SetupHelper replaces the entire package directory on every update.
+- **`ext/velib_python` de-submoduled** - Vendored as plain committed files instead of a git submodule, since SetupHelper/PackageManager installs via a bare GitHub branch archive, which never includes submodule content.
+- **Single version source** - `src/_version.py` now reads the root `version` file at import time instead of hardcoding a duplicate string, eliminating the previous 4-location manual version bump.
+- **Documentation restructured** - `TODO.md` and `ARCHITECTURE.md` moved from the private `dev-notes/` to the public project root; added root `PROJECT.md` declaring doc structure and file roles. The project's own copy of AI coding standards and its Venus OS constraints notes were removed in favor of the global standards file and the shared cross-project `environment-notes/venus-os-cerbo-gx.md`, respectively. The conversation-continuity tracking doc was dropped.
+
+### Removed
+
+- `install.sh`, `build-release.sh`, and the packaged release tarball workflow - SetupHelper distributes the raw repo directly, no build/packaging step needed.
+
+### Fixed
+
+- **Curly-quote syntax errors** - `src/config_manager.py`, `src/parser_adapter.py`, and `src/validate_parsing_v2.py` each had curly quotes (`"`/`"`) used as Python string delimiters in test/validation code instead of straight quotes, which was a pre-existing syntax error preventing those files from compiling at all.
+- **Broken `velib_python` import path** - `src/govee_ble_service.py` and `src/govee_temperature_service.py` computed the vendored library's path relative to `src/`, which only worked under the old `build-release.sh` flattened layout. Now that the repo's own `src/`/`ext/` layout is deployed as-is, this was updated to resolve `ext/velib_python` as a sibling of `src/`.
+- **Missing `config.json` on fresh install** - `setup` only created `config.json` when migrating a pre-1.5.0 install; a genuinely fresh install left no config file at all, and `add-sensor.sh` hard-fails without one. `setup install auto` now seeds `config.json` from `config.example.json` when no config exists yet (or is empty), whether or not a migration ran.
+- **Placeholder sensors no longer seeded into live config** - `config.example.json` carried two example sensor entries (`A4:C1:38:XX:XX:XX`/`YY:YY:YY`) that, now that fresh installs seed `config.json` directly from it, would have ended up "configured" on every new install. Removed - `sensors` starts empty; sensors are meant to be added via `add-sensor.sh`, not by hand-editing example placeholders.
+
+---
+
 ## [1.4.2] - 2026-05-12
 
 ### Fixed

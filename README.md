@@ -1,6 +1,6 @@
 # Govee BLE Venus OS Bridge
 
-**Version:** 1.4.2
+**Version:** 1.5.0
 **Status:** Production Ready
 
 Python bridge for integrating Govee H510x Bluetooth temperature/humidity sensors with Victron Energy Venus OS.
@@ -51,47 +51,57 @@ Based on validation against Govee mobile app:
 | **Humidity** | ±3-5% | Good |
 | **RSSI** | Real-time | Signal strength |
 
-## Quick Start
+## Installation (Cerbo GX)
 
-### 1. Download and Transfer
-
-Download `govee-ble-deploy.tar.gz` from [Releases](../../releases) and transfer to Venus OS:
+This package installs via Victron's community [SetupHelper](https://github.com/kwindrem/SetupHelper) framework. If SetupHelper isn't already installed:
 
 ```bash
-scp govee-ble-deploy.tar.gz root@venus.local:/tmp/
+wget -qO - https://github.com/kwindrem/SetupHelper/archive/latest.tar.gz | tar -xzf - -C /data
+rm -rf /data/SetupHelper
+mv /data/SetupHelper-latest /data/SetupHelper
+/data/SetupHelper/setup
 ```
 
-### 2. Run Installation Script
+Then install this package:
 
 ```bash
-# SSH to Venus OS
-ssh root@venus.local
-
-# Extract and run installer
-cd /tmp
-tar xzf govee-ble-deploy.tar.gz
-cd govee-ble-deploy
-./install.sh
+mkdir -p /tmp/venus-govee-ble-download /data/venus-govee-ble
+wget -qO /tmp/venus-govee-ble-download/archive.tar.gz https://github.com/jsalbre/venus-govee-ble/archive/main.tar.gz
+tar xzf /tmp/venus-govee-ble-download/archive.tar.gz -C /tmp/venus-govee-ble-download
+mv /tmp/venus-govee-ble-download/venus-govee-ble-*/* /data/venus-govee-ble/
+/data/venus-govee-ble/setup install auto
 ```
 
-The installer automatically:
-- Deploys files to proper locations
-- Creates default configuration
-- Sets up the runit service
-- Prompts to start the service
+**Upgrading from the old (pre-1.5.0) manual installer?** `setup install auto` detects the previous `/data/govee-ble` install automatically, migrates `config.json` and `discovered_sensors.json` into the new location, and removes every remnant of the old install (old service, old `/data/rc.local` boot hook, old install directory, and any timestamped backups) — no manual cleanup needed.
 
-### 3. Add Sensors
+### Updating
+
+Once installed, PackageManager's GitHub auto-update will pick up new releases. To update manually:
+
+```bash
+mkdir -p /tmp/venus-govee-ble-download
+wget -qO /tmp/venus-govee-ble-download/archive.tar.gz https://github.com/jsalbre/venus-govee-ble/archive/main.tar.gz
+tar xzf /tmp/venus-govee-ble-download/archive.tar.gz -C /tmp/venus-govee-ble-download
+mv /tmp/venus-govee-ble-download/venus-govee-ble-*/* /data/venus-govee-ble/
+/data/venus-govee-ble/setup install auto
+```
+
+`setup install auto` diffs the service run file and restarts the service itself — never manually `svc -d`/`svc -u` around an update. Configuration lives under `/data/setupOptions/venus-govee-ble/`, which persists across updates.
+
+### Uninstalling
+
+```bash
+/data/venus-govee-ble/setup uninstall
+```
+
+### Add Sensors
 
 **Important:** Govee H510x sensors do NOT display MAC addresses on the device or in the Govee app. The service discovers them automatically via BLE.
 
-Start the service, then use the interactive helper to add sensors:
+Once the service is running (it starts automatically after install), use the interactive helper to add sensors:
 
 ```bash
-# Start service (discovers nearby Govee sensors automatically)
-svc -u /service/govee-ble
-
-# Run the interactive sensor menu
-/data/govee-ble/add-sensor.sh
+/data/venus-govee-ble/add-sensor.sh
 ```
 
 The menu shows sensors the service has discovered but aren't yet configured. You can:
@@ -101,13 +111,13 @@ The menu shows sensors the service has discovered but aren't yet configured. You
 
 **Temperature Types:** 0=Battery, 1=Fridge, 2=Generic, 3=Room, 4=Outdoor, 5=Water heater, 6=Freezer
 
-**Alternative:** Edit `/data/govee-ble/config.json` directly (see Configuration section below).
+**Alternative:** Edit `/data/setupOptions/venus-govee-ble/config.json` directly (see Configuration section below).
 
-### 4. Verify
+### Verify
 
 ```bash
 # Check logs
-tail -f /data/govee-ble/logs/govee_ble.log
+tail -f /data/setupOptions/venus-govee-ble/logs/govee_ble.log
 ```
 
 Verify in Venus OS GUI:
@@ -117,7 +127,7 @@ Verify in Venus OS GUI:
 
 ## Configuration
 
-The service is configured via `/data/govee-ble/config.json`:
+The service is configured via `/data/setupOptions/venus-govee-ble/config.json`:
 
 ```json
 {
@@ -132,7 +142,7 @@ The service is configured via `/data/govee-ble/config.json`:
   ],
   "temperature_type_default": 2,
   "log_level": "INFO",
-  "log_path": "/data/govee-ble/logs/govee_ble.log",
+  "log_path": "/data/setupOptions/venus-govee-ble/logs/govee_ble.log",
   "stale_threshold_sec": 300,
   "restart_min_delay_sec": 30,
   "restart_max_delay_sec": 300,
@@ -177,41 +187,41 @@ Each sensor in the `sensors` array has:
 
 ```bash
 # Check status
-svstat /service/govee-ble
+svstat /service/venus-govee-ble
 
 # Restart service
-svc -t /service/govee-ble
+svc -t /service/venus-govee-ble
 
 # Stop service
-svc -d /service/govee-ble
+svc -d /service/venus-govee-ble
 
 # Start service
-svc -u /service/govee-ble
+svc -u /service/venus-govee-ble
 
 # View logs
-tail -f /data/govee-ble/logs/govee_ble.log
+tail -f /data/setupOptions/venus-govee-ble/logs/govee_ble.log
 ```
 
 ## Troubleshooting
 
 ### Sensors Not Appearing
 
-1. Check logs for discovered sensors: `tail -f /data/govee-ble/logs/govee_ble.log`
-2. Verify MAC addresses in sensors array (must be uppercase): `cat /data/govee-ble/config.json`
+1. Check logs for discovered sensors: `tail -f /data/setupOptions/venus-govee-ble/logs/govee_ble.log`
+2. Verify MAC addresses in sensors array (must be uppercase): `cat /data/setupOptions/venus-govee-ble/config.json`
 3. Ensure sensors have fresh batteries and are within range (10-30m)
-4. Check service is running: `svstat /service/govee-ble`
+4. Check service is running: `svstat /service/venus-govee-ble`
 
 ### Service Won't Start
 
 ```bash
 # Check logs for errors
-tail -n 50 /data/govee-ble/logs/govee_ble.log
+tail -n 50 /data/setupOptions/venus-govee-ble/logs/govee_ble.log
 
 # Verify btmon is working
 btmon -T | head -n 20
 
 # Test Python imports
-python3 -c "import sys; sys.path.insert(1, '/data/govee-ble/ext/velib_python'); from vedbus import VeDbusService; print('OK')"
+python3 -c "import sys; sys.path.insert(1, '/data/venus-govee-ble/ext/velib_python'); from vedbus import VeDbusService; print('OK')"
 ```
 
 ### D-Bus Issues
@@ -233,23 +243,23 @@ dbus-send --system --print-reply \
 ## Project Structure
 
 ```
-govee-ble-venus-py/
+venus-govee-ble/
 ├── src/                           # Source code
-│   ├── _version.py                # Version (single source of truth)
+│   ├── _version.py                # Reads the root `version` file
 │   ├── govee_ble_service.py       # Main service orchestrator
 │   ├── govee_temperature_service.py # D-Bus temperature service
 │   ├── parser_adapter.py          # BLE advertisement parser
 │   ├── btmon_reader.py            # btmon process manager
 │   ├── config_manager.py          # Configuration management
 │   └── validate_parsing_v2.py     # Validation tool
-├── service/                       # Runit service files
-│   └── govee-ble/run              # Service startup script
+├── services/                      # SetupHelper runit service files
+│   └── venus-govee-ble/{run,log/run}
 ├── ext/                           # Dependencies
-│   └── velib_python/              # Victron Venus library
+│   └── velib_python/              # Victron Venus library (vendored)
 ├── config.example.json            # Example configuration
-├── install.sh                     # Installation script
+├── setup                          # SetupHelper install/uninstall script
+├── version, gitHubInfo            # SetupHelper package metadata
 ├── add-sensor.sh                  # Sensor configuration helper
-├── build-release.sh               # Release packaging script
 └── README.md                      # This file
 ```
 
@@ -336,6 +346,7 @@ This project is designed for Venus OS's unique environment:
 - **Bluetooth:** BlueZ 5.72 with btmon utility
 - **Init:** runit service manager
 - **D-Bus:** System bus for Venus OS integration
+- **Packaging:** SetupHelper, with PackageManager auto-update
 
 ## Known Limitations
 
@@ -351,45 +362,6 @@ Typical resource usage on Cerbo GX:
 - **Disk:** Up to 70 MB (log rotation @ 10MB × 7 files)
 - **Network:** None (D-Bus local only)
 
-## Updates
-
-To update to a new version:
-
-1. Download new release tarball
-2. Transfer to Venus OS: `scp govee-ble-deploy.tar.gz root@venus.local:/tmp/`
-3. Extract and run installer:
-   ```bash
-   cd /tmp
-   tar xzf govee-ble-deploy.tar.gz
-   cd govee-ble-deploy
-   ./install.sh
-   ```
-
-**Automatic Backup:** The installer automatically backs up your existing installation to `/data/govee-ble.backup.YYYYMMDD_HHMMSS` before installing. The backup directory location is displayed at the end of installation.
-
-**To restore a backup:**
-```bash
-svc -d /service/govee-ble
-rm -rf /data/govee-ble
-mv /data/govee-ble.backup.YYYYMMDD_HHMMSS /data/govee-ble
-svc -u /service/govee-ble
-```
-
-Configuration files are preserved during updates (both in the backup and carried forward to the new installation).
-
-## Uninstalling
-
-To completely remove the service:
-
-```bash
-# Stop and remove service
-svc -d /service/govee-ble
-rm -rf /service/govee-ble
-
-# Remove application files
-rm -rf /data/govee-ble
-```
-
 ## License
 
 MIT License - See LICENSE file for details
@@ -404,7 +376,7 @@ MIT License - See LICENSE file for details
 
 For issues, questions, or feature requests:
 - Open an [Issue](../../issues) on GitHub
-- Include logs: `/data/govee-ble/logs/govee_ble.log`
+- Include logs: `/data/setupOptions/venus-govee-ble/logs/govee_ble.log`
 - Provide Venus OS version and sensor model
 
 ## Changelog

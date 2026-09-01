@@ -361,13 +361,13 @@ def smoke_test() -> bool:
     test3_data = bytes.fromhex("0201827a853f")  # Wrong first marker
     result3 = parse_h510x_manufacturer_data(test3_data)
     assert result3 is None, "Test 3: Should reject invalid marker"
-    _LOGGER.info(“Test 3 passed: Invalid marker rejected”)
+    _LOGGER.info("Test 3 passed: Invalid marker rejected")
     
     # Test 4: Short data rejection
     test4_data = bytes.fromhex("0101827a")  # Only 4 bytes
     result4 = parse_h510x_manufacturer_data(test4_data)
     assert result4 is None, "Test 4: Should reject short data"
-    _LOGGER.info(“Test 4 passed: Short data rejected”)
+    _LOGGER.info("Test 4 passed: Short data rejected")
     
     _LOGGER.info("All smoke tests PASSED!")
     return True

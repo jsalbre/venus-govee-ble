@@ -10,9 +10,10 @@ import time
 import sys
 import os
 import re
+from pathlib import Path
 
 # Add velib_python to path
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'ext/velib_python'))
+sys.path.insert(1, str(Path(__file__).resolve().parent.parent / 'ext' / 'velib_python'))
 
 from vedbus import VeDbusService
 from _version import __version__

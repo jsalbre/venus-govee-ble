@@ -21,7 +21,7 @@ from typing import Dict, Optional
 from logging.handlers import RotatingFileHandler
 
 # Add velib_python to path
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'ext/velib_python'))
+sys.path.insert(1, str(Path(__file__).resolve().parent.parent / 'ext' / 'velib_python'))
 
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
@@ -109,7 +109,7 @@ class GoveeBLEService:
 
         # Discovered but unconfigured sensors
         self._discovered_sensors = set()
-        self._discovered_sensors_path = Path('/data/govee-ble/discovered_sensors.json')
+        self._discovered_sensors_path = Path('/data/setupOptions/venus-govee-ble/discovered_sensors.json')
 
         # Shutdown flag
         self.shutdown_requested = False
@@ -121,7 +121,7 @@ class GoveeBLEService:
 
     def _setup_logging(self):
         """Configure logging with rotation."""
-        log_path = Path(self.config.get('log_path', '/data/govee-ble/logs/govee_ble.log'))
+        log_path = Path(self.config.get('log_path', '/data/setupOptions/venus-govee-ble/logs/govee_ble.log'))
         log_level = self.config.get('log_level', 'INFO')
 
         # Ensure log directory exists
@@ -347,7 +347,7 @@ class GoveeBLEService:
 
         if not sensors:
             _LOGGER.warning("No sensors configured - no sensors will be monitored")
-            _LOGGER.info("Add sensors to config.json or use: /data/govee-ble/add-sensor.sh")
+            _LOGGER.info("Add sensors to config.json or use: /data/venus-govee-ble/add-sensor.sh")
             return
 
         sensor_macs = [s.get('mac', '').upper() for s in sensors if s.get('mac')]
@@ -604,7 +604,7 @@ def main():
     if len(sys.argv) > 1:
         config_path = Path(sys.argv[1])
     else:
-        config_path = Path('/data/govee-ble/config.json')
+        config_path = Path('/data/setupOptions/venus-govee-ble/config.json')
 
     # Create and run service
     service = GoveeBLEService(config_path)

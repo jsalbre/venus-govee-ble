@@ -29,7 +29,7 @@ class ConfigManager:
         "sensors": [],
         "ble_interface": "hci0",
         "log_level": "INFO",
-        "log_path": "/data/govee-ble/logs/govee_ble.log",
+        "log_path": "/data/setupOptions/venus-govee-ble/logs/govee_ble.log",
         "update_interval_sec": 1,
         "stale_threshold_sec": 300,
         "restart_min_delay_sec": 30,
@@ -548,26 +548,26 @@ def main():
     print(f"  Instance: {manager.get_device_instance(mac)}")
     print(f"  Temp Type: {manager.get_temperature_type(mac)}")
     print(f"  Is Allowed: {manager.is_allowed(mac)}")
-    print(f”  Device info retrieved\n”)
+    print(f"  Device info retrieved\n")
     
     # Test 5: Temperature type override
     print("Test 5: Setting temperature type override...")
     manager.update_temperature_type("AA:BB:CC:DD:EE:FF", 1)  # Fridge
     print(f"  Temp Type: {manager.get_temperature_type('AA:BB:CC:DD:EE:FF')}")
-    print(f”  Temperature type updated\n”)
+    print(f"  Temperature type updated\n")
     
     # Test 6: Export
     print("Test 6: Exporting config...")
     json_str = manager.export_json()
     print(f"  Config JSON:\n{json_str}")
-    print(f”  Config exported\n”)
+    print(f"  Config exported\n")
     
     # Test 7: Remove sensor
     print("Test 7: Removing sensor...")
     manager.remove_sensor("11:22:33:44:55:66")
     print(f"  Sensors: {manager.get_sensors()}")
     print(f"  Is Allowed (removed): {manager.is_allowed('11:22:33:44:55:66')}")
-    print(f”  Device removed\n”)
+    print(f"  Device removed\n")
     
     print("="*60)
     print("All tests passed!")

@@ -126,7 +126,7 @@ Key methods for sensor management:
 ## D-Bus Service Structure
 
 **Service name pattern:** `com.victronenergy.temperature.govee_<last4_mac_hex>`
-**Example:** `com.victronenergy.temperature.govee_0daf`
+**Example:** `com.victronenergy.temperature.govee_abcd`
 
 | Path | Type | Description |
 |------|------|-------------|
@@ -270,7 +270,7 @@ dbus-send --system --print-reply \
 
 # Read temperature
 dbus-send --system --print-reply \
-  --dest=com.victronenergy.temperature.govee_0daf \
+  --dest=com.victronenergy.temperature.govee_abcd \
   /Temperature com.victronenergy.BusItem.GetValue
 ```
 

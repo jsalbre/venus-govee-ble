@@ -46,8 +46,8 @@ class GoveeTemperatureService:
         Initialize Govee temperature service.
 
         Args:
-            mac_address: Sensor MAC address (e.g., "A4:C1:38:8E:0D:AF")
-            device_name: Display name for CustomName (e.g., "Freezer" or "GVH5101_0DAF")
+            mac_address: Sensor MAC address (e.g., "A4:C1:38:XX:XX:XX")
+            device_name: Display name for CustomName (e.g., "Freezer" or "GVH5101_ABCD")
             ble_name: BLE advertisement name for model extraction (e.g., "GVH5105_240C")
             device_instance: Unique device instance number (0-99)
             temperature_type: 0=battery, 1=fridge, 2=generic

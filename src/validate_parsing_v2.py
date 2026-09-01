@@ -13,7 +13,7 @@ Strategy:
 Usage:
     # Collect samples for 15 minutes
     python3 validate_parsing_v2.py --collect \\
-      --macs A4:C1:38:B8:DF:A1 A4:C1:38:8E:0D:AF \\
+      --macs A4:C1:38:XX:XX:XX A4:C1:38:YY:YY:YY \\
       --duration 900 \\
       --output samples_$(date +%Y%m%d_%H%M).json
     

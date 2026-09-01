@@ -67,7 +67,7 @@ class AdvertisementAssembler:
     btmon -T produces MGMT Event blocks that look like:
     
     @ MGMT Event: Device Found (0x0012) plen 45  {0x0001} [hci0] 2025-11-12 06:54:31.955895
-            LE Address: A4:C1:38:B8:DF:A1 (OUI A4-C1-38)
+            LE Address: A4:C1:38:XX:XX:XX (OUI A4-C1-38)
             RSSI: -76 dBm (0xb4)
             Flags: 0x00000000
             Data length: 31

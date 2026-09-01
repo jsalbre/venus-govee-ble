@@ -162,7 +162,7 @@ class GoveeBLEService:
         and saves it to config.
 
         Args:
-            mac_address: MAC address (e.g., "A4:C1:38:8E:0D:AF")
+            mac_address: MAC address (e.g., "A4:C1:38:XX:XX:XX")
 
         Returns:
             Device instance (400-499)

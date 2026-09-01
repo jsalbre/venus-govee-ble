@@ -65,10 +65,11 @@ mv /data/SetupHelper-latest /data/SetupHelper
 Then install this package:
 
 ```bash
-mkdir -p /tmp/venus-govee-ble-download /data/venus-govee-ble
+mkdir -p /tmp/venus-govee-ble-download
 wget -qO /tmp/venus-govee-ble-download/archive.tar.gz https://github.com/jsalbre/venus-govee-ble/archive/main.tar.gz
 tar xzf /tmp/venus-govee-ble-download/archive.tar.gz -C /tmp/venus-govee-ble-download
-mv /tmp/venus-govee-ble-download/venus-govee-ble-*/* /data/venus-govee-ble/
+rm -rf /data/venus-govee-ble
+mv /tmp/venus-govee-ble-download/venus-govee-ble-* /data/venus-govee-ble
 /data/venus-govee-ble/setup install auto
 ```
 
@@ -82,9 +83,12 @@ Once installed, PackageManager's GitHub auto-update will pick up new releases. T
 mkdir -p /tmp/venus-govee-ble-download
 wget -qO /tmp/venus-govee-ble-download/archive.tar.gz https://github.com/jsalbre/venus-govee-ble/archive/main.tar.gz
 tar xzf /tmp/venus-govee-ble-download/archive.tar.gz -C /tmp/venus-govee-ble-download
-mv /tmp/venus-govee-ble-download/venus-govee-ble-*/* /data/venus-govee-ble/
+rm -rf /data/venus-govee-ble
+mv /tmp/venus-govee-ble-download/venus-govee-ble-* /data/venus-govee-ble
 /data/venus-govee-ble/setup install auto
 ```
+
+`rm -rf /data/venus-govee-ble` before re-extracting is required, not optional — `mv extracted/* /data/venus-govee-ble/` silently fails to update any subdirectory (`src/`, `services/`, `ext/`) that already exists at the destination, since `mv` won't merge a source directory into an existing same-named destination directory. This is safe because all persistent state lives under `/data/setupOptions/venus-govee-ble/`, untouched by removing the package directory itself.
 
 `setup install auto` diffs the service run file and restarts the service itself — never manually `svc -d`/`svc -u` around an update. Configuration lives under `/data/setupOptions/venus-govee-ble/`, which persists across updates.
 

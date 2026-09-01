@@ -277,12 +277,15 @@ dbus-send --system --print-reply \
 ### Deployment
 
 ```bash
-mkdir -p /tmp/venus-govee-ble-download /data/venus-govee-ble
+mkdir -p /tmp/venus-govee-ble-download
 wget -qO /tmp/venus-govee-ble-download/archive.tar.gz https://github.com/jsalbre/venus-govee-ble/archive/main.tar.gz
 tar xzf /tmp/venus-govee-ble-download/archive.tar.gz -C /tmp/venus-govee-ble-download
-mv /tmp/venus-govee-ble-download/venus-govee-ble-*/* /data/venus-govee-ble/
+rm -rf /data/venus-govee-ble
+mv /tmp/venus-govee-ble-download/venus-govee-ble-* /data/venus-govee-ble
 /data/venus-govee-ble/setup install auto
 ```
+
+`rm -rf /data/venus-govee-ble` before re-extracting is required on an update — `mv extracted/* dest/` silently fails to update any subdirectory (`src/`, `services/`, `ext/`) already present at the destination. Safe since persistent state lives under `/data/setupOptions/venus-govee-ble/`.
 
 ---
 

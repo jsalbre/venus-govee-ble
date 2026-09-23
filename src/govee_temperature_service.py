@@ -34,9 +34,9 @@ class GoveeTemperatureService:
     TEMP_TYPE_FRIDGE = 1
     TEMP_TYPE_GENERIC = 2
 
-    # Status constants
+    # Status constants (per Venus OS temperature service spec)
     STATUS_OK = 0
-    STATUS_DISCONNECTED = 1
+    STATUS_UNKNOWN = 4
 
     def __init__(self, mac_address: str, device_name: str, ble_name: str = None,
                  device_instance: int = 0, temperature_type: int = TEMP_TYPE_GENERIC,
@@ -70,8 +70,10 @@ class GoveeTemperatureService:
         mac_suffix = mac_address.replace(':', '')[-4:].lower()
         self.service_name = f"com.victronenergy.temperature.govee_{mac_suffix}"
 
-        # Track last update time for stale detection
+        # Track last update time for stale detection; created_time is the
+        # fallback reference point for a sensor that never advertises
         self.last_update_time = None
+        self.created_time = time.time()
 
         # Create the D-Bus service
         self._dbusservice = VeDbusService(self.service_name, bus=dbusconn, register=False)
@@ -191,7 +193,7 @@ class GoveeTemperatureService:
         if self.humidity_enabled:
             self._dbusservice.add_path('/Humidity', value=None, description='Relative humidity in percent')
 
-        self._dbusservice.add_path('/Status', value=self.STATUS_OK, description='Status: 0=Ok, 1=Disconnected')
+        self._dbusservice.add_path('/Status', value=self.STATUS_OK, description='Status: 0=Ok, 4=Unknown (stale)')
         self._dbusservice.add_path('/TemperatureType', value=self.temperature_type, writeable=True,
                                    onchangecallback=self._handle_type_change,
                                    description='0=battery, 1=fridge, 2=generic, 3=room, 4=outdoor, 5=waterheater, 6=freezer')
@@ -229,8 +231,8 @@ class GoveeTemperatureService:
         self._dbusservice['/RSSI'] = rssi
         self._dbusservice['/Mgmt/LastUpdate'] = int(now)
 
-        # Mark as connected if it was disconnected
-        if self._dbusservice['/Status'] == self.STATUS_DISCONNECTED:
+        # Mark as connected if it was stale
+        if self._dbusservice['/Status'] == self.STATUS_UNKNOWN:
             _LOGGER.info(f"{self.service_name}: Sensor reconnected")
             self._dbusservice['/Status'] = self.STATUS_OK
             self._dbusservice['/Connected'] = 1
@@ -247,12 +249,12 @@ class GoveeTemperatureService:
         )
 
     def mark_disconnected(self):
-        """Mark sensor as disconnected (stale - no recent advertisements)."""
-        if self._dbusservice['/Status'] != self.STATUS_DISCONNECTED:
+        """Mark sensor as stale (no recent advertisements)."""
+        if self._dbusservice['/Status'] != self.STATUS_UNKNOWN:
             _LOGGER.warning(
                 f"{self.service_name}: Sensor disconnected (no advertisements)"
             )
-            self._dbusservice['/Status'] = self.STATUS_DISCONNECTED
+            self._dbusservice['/Status'] = self.STATUS_UNKNOWN
             self._dbusservice['/Connected'] = 0
 
     def check_stale(self, threshold_sec: int) -> bool:
@@ -265,10 +267,8 @@ class GoveeTemperatureService:
         Returns:
             True if stale (should be marked disconnected)
         """
-        if self.last_update_time is None:
-            return False
-
-        elapsed = time.time() - self.last_update_time
+        reference_time = self.last_update_time if self.last_update_time is not None else self.created_time
+        elapsed = time.time() - reference_time
         return elapsed > threshold_sec
 
     def update_custom_name(self, name: str):

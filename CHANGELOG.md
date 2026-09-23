@@ -5,6 +5,19 @@ All notable changes to the Govee BLE Venus OS Bridge project will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-09-23
+
+### Added
+
+- **Sensors stay visible after a service restart** - D-Bus services for all configured sensors are now created eagerly at startup instead of only when a BLE advertisement arrives. A sensor that stops advertising (e.g. a dead battery) before a restart no longer disappears entirely - it stays listed and goes to a stale status once its data times out, the same way it already behaved when it went quiet mid-session.
+
+### Changed
+
+- **`/Status` stale value changed from 1 (Open circuit) to 4 (Unknown)** - the old value mapped to a "Open circuit" label in the Venus OS GUI, which doesn't describe a wireless sensor that has simply stopped advertising. "Unknown" is more accurate given the actual cause (dead battery, out of range, etc.) can't be distinguished from silence alone.
+- **Stale detection now also applies to a sensor that has never advertised since startup** - previously a sensor with no update since the service started could never be marked stale; it now uses the service's creation time as the reference point in that case.
+
+---
+
 ## [1.5.0] - 2026-09-01
 
 ### Changed

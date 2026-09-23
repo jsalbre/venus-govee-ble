@@ -233,7 +233,7 @@ class GoveeBLEService:
         # Priority for CustomName (what user sees):
         # 1. Custom name from config (user preference) - HIGHEST
         # 2. BLE advertisement name (descriptive)
-        # 3. Generated default (shouldn't happen with lazy creation)
+        # 3. Generated default (a configured sensor with no name and no advertisement yet)
 
         custom_name = self.config_manager.get_device_name(mac_address)
         if custom_name:
@@ -243,7 +243,7 @@ class GoveeBLEService:
             device_name = ble_name
             _LOGGER.debug(f"Using BLE name for {mac_address}: {ble_name}")
         else:
-            # Fallback (shouldn't happen with lazy creation)
+            # Fallback (a configured sensor with no name and no advertisement yet)
             mac_suffix = mac_address.replace(':', '')[-4:].upper()
             device_name = f"GVH5101_{mac_suffix}"
             _LOGGER.warning(
@@ -336,10 +336,14 @@ class GoveeBLEService:
 
     def _initialize_services(self):
         """
-        Log configured sensors and prepare for lazy service creation.
+        Eagerly create a D-Bus service for every configured sensor.
 
-        Services are now created on-demand when first advertisement is received,
-        ensuring correct model information (H5100/H5105 etc.) from the BLE name.
+        Services are created immediately at startup (rather than waiting for
+        the first advertisement) so a previously-configured sensor stays
+        visible - with a stale status once its data times out - even if it
+        never advertises again (e.g. a dead battery). Model information
+        (H5100/H5105 etc.) is generic until a real advertisement arrives,
+        since it depends on the BLE name.
         """
         sensors = self.config.get('sensors', [])
 
@@ -355,11 +359,10 @@ class GoveeBLEService:
         _LOGGER.info(f"Configured sensors: {len(sensor_macs)}")
         for mac in sensor_macs:
             _LOGGER.info(f"  - {mac}")
-
-        _LOGGER.info(
-            f"Waiting for BLE advertisements from {len(sensor_macs)} sensor(s)... "
-            f"(services will be created when first advertisement is received)"
-        )
+            try:
+                self.services[mac] = self._create_service_for_sensor(mac, ble_name=None)
+            except Exception as e:
+                _LOGGER.error(f"Failed to create service for {mac}: {e}", exc_info=True)
 
     def _handle_advertisement(self, adv_data: dict):
         """

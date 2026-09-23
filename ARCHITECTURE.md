@@ -1,6 +1,6 @@
 # Architecture
 
-**Version:** 1.1 | **Updated:** 2026-09-01
+**Version:** 1.2 | **Updated:** 2026-09-23
 
 **Project:** Govee BLE Venus OS Bridge
 **GitHub:** jsalbre/venus-govee-ble (public)
@@ -38,9 +38,9 @@ Govee H510x BLE temperature/humidity sensor bridge for Victron Venus OS (Cerbo G
 
 Replaced separate `allowlist`, `names`, `temperature_type`, and `device_instances` dicts with a single `sensors` array. Each sensor object contains all its properties. This was a breaking change from the v1.1.0 format. The old format required each MAC address to appear in 4 separate dictionaries.
 
-### Lazy Service Creation
+### Eager Service Creation (v1.6.0+)
 
-D-Bus services are created on first BLE advertisement, not at startup. This ensures accurate model detection from the real BLE name rather than using fallback values. Without this, all sensors showed as "Govee H510x" with incorrect ProductIDs. Services appear 2-30 seconds after startup, which matches standard Venus OS BLE device behavior.
+D-Bus services are created at startup for every configured sensor, not only on first BLE advertisement. This keeps a previously-configured sensor visible (with `/Status` going to Unknown once its data goes stale) even if it never advertises again, e.g. a dead battery - it no longer simply vanishes after a service restart. The trade-off: until a real advertisement arrives, model detection falls back to a generic ProductID/ProductName ("Govee H510x") since that requires the BLE name, which isn't known until an advertisement is actually received.
 
 ### Private D-Bus Connections
 
@@ -132,7 +132,7 @@ Key methods for sensor management:
 |------|------|-------------|
 | `/Temperature` | float | Temperature in Celsius |
 | `/Humidity` | float | Relative humidity % (conditional on humidity_enabled) |
-| `/Status` | int | 0=Ok, 1=Disconnected |
+| `/Status` | int | 0=Ok, 4=Unknown (stale, per Venus OS temperature status enum) |
 | `/Connected` | int | 1=connected, 0=disconnected |
 | `/TemperatureType` | int | See temperature types above (writable, persisted) |
 | `/CustomName` | string | User-configurable name (writable, persisted) |
@@ -152,7 +152,7 @@ custom names) across the migration.
 
 ### Service Behavior
 
-- **Stale detection:** Sensor marked Disconnected after 300 seconds without advertisement
+- **Stale detection:** Sensor marked Unknown after 300 seconds without advertisement, measured from its last update or, if it has never advertised since the service started, from when its service was created
 - **Reconnection:** Automatic when advertisements resume
 - **Error recovery:** Exponential backoff for btmon restarts (30s -> 300s cap)
 - **Backoff reset:** After 1 hour of successful operation
@@ -214,6 +214,7 @@ All supported models share the H510x parser.
 - **Venus OS GUI:** Cannot display custom D-Bus paths. Humidity toggle is config-file-only.
 - **BLE range:** 10-30 meters line of sight. Metal/concrete walls reduce range.
 - **Config changes:** Humidity toggle requires service restart. CustomName and TemperatureType persist via D-Bus in real time.
+- **Model/ProductID after restart:** A configured sensor that hasn't advertised since the last service restart shows a generic ProductID/ProductName ("Govee H510x") instead of its real model, since model detection requires the BLE name from an actual advertisement.
 
 ---
 
